@@ -213,7 +213,7 @@ const Customers = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="high-value" />
-                  <Label htmlFor="high-value">High Value (>$300 spent)</Label>
+                  <Label htmlFor="high-value">High Value ({'>'}$300 spent)</Label>
                 </div>
               </div>
               <div className="pt-2 flex justify-between">
