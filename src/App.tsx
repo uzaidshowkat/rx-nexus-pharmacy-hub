@@ -8,6 +8,17 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
+import Inventory from "./pages/Inventory";
+import Sales from "./pages/Sales";
+import Purchases from "./pages/Purchases";
+import Customers from "./pages/Customers";
+import Prescriptions from "./pages/Prescriptions";
+import Returns from "./pages/Returns";
+import Alerts from "./pages/Alerts";
+import Reports from "./pages/Reports";
+import Compliance from "./pages/Compliance";
+import EPrescriptions from "./pages/EPrescriptions";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -21,17 +32,17 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/" element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/inventory" element={<NotFound />} />
-            <Route path="/sales" element={<NotFound />} />
-            <Route path="/purchases" element={<NotFound />} />
-            <Route path="/customers" element={<NotFound />} />
-            <Route path="/prescriptions" element={<NotFound />} />
-            <Route path="/returns" element={<NotFound />} />
-            <Route path="/alerts" element={<NotFound />} />
-            <Route path="/reports" element={<NotFound />} />
-            <Route path="/compliance" element={<NotFound />} />
-            <Route path="/e-prescriptions" element={<NotFound />} />
-            <Route path="/settings" element={<NotFound />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/sales" element={<Sales />} />
+            <Route path="/purchases" element={<Purchases />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/prescriptions" element={<Prescriptions />} />
+            <Route path="/returns" element={<Returns />} />
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/compliance" element={<Compliance />} />
+            <Route path="/e-prescriptions" element={<EPrescriptions />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
