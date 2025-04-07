@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { 
   Search, 
   Filter, 
-  FileExport, 
+  FileText, 
   Eye, 
   Edit, 
   Plus, 
@@ -20,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { toast } from "@/hooks/use-toast";
 
-// Sample customer data
 const initialCustomers = [
   { 
     id: 1, 
@@ -84,19 +82,16 @@ const Customers = () => {
     notes: ''
   });
 
-  // Filter customers based on search term
   const filteredCustomers = customers.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.contact.includes(searchTerm)
   );
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
 
-  // Handle adding a new customer
   const handleAddCustomer = () => {
     if (!newCustomer.name || !newCustomer.email || !newCustomer.contact) {
       toast({
@@ -130,19 +125,16 @@ const Customers = () => {
     });
   };
 
-  // Handle viewing customer details
   const handleViewCustomer = (customer) => {
     setCurrentCustomer(customer);
     setIsViewDialogOpen(true);
   };
 
-  // Handle editing customer
   const handleEditCustomer = (customer) => {
     setCurrentCustomer(customer);
     setIsEditDialogOpen(true);
   };
 
-  // Handle saving edited customer
   const handleSaveEdit = () => {
     if (currentCustomer) {
       setCustomers(customers.map(c => c.id === currentCustomer.id ? currentCustomer : c));
@@ -155,14 +147,12 @@ const Customers = () => {
     }
   };
 
-  // Handle exporting customers data
   const handleExport = () => {
     toast({
       title: "Export Started",
       description: "Customer data export has begun. The file will download shortly.",
     });
 
-    // Simulated export delay
     setTimeout(() => {
       toast({
         title: "Export Complete",
@@ -225,7 +215,7 @@ const Customers = () => {
         </Popover>
         
         <Button variant="outline" onClick={handleExport}>
-          <FileExport className="mr-2 h-4 w-4" />
+          <FileText className="mr-2 h-4 w-4" />
           Export
         </Button>
       </div>
@@ -324,7 +314,6 @@ const Customers = () => {
         </CardContent>
       </Card>
       
-      {/* Add New Customer Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -404,7 +393,6 @@ const Customers = () => {
         </DialogContent>
       </Dialog>
       
-      {/* View Customer Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -450,7 +438,6 @@ const Customers = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Edit Customer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

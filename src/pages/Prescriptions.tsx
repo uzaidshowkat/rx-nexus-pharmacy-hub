@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,8 +85,8 @@ const Prescriptions = () => {
     doctor: "",
     medication: "",
     dosage: "",
-    quantity: "",
-    refills: "",
+    quantity: 0,
+    refills: 0,
     issueDate: format(new Date(), 'yyyy-MM-dd'),
     expiryDate: format(new Date(new Date().setMonth(new Date().getMonth() + 1)), 'yyyy-MM-dd'),
     status: "active",
@@ -121,6 +120,10 @@ const Prescriptions = () => {
 
   // Update new prescription field
   const updateNewPrescription = (field, value) => {
+    if (field === 'quantity' || field === 'refills') {
+      value = Number(value);
+    }
+    
     setNewPrescription({
       ...newPrescription,
       [field]: value
@@ -130,7 +133,7 @@ const Prescriptions = () => {
   // Handle adding a new prescription
   const handleAddPrescription = () => {
     const requiredFields = ['patient', 'doctor', 'medication', 'dosage', 'quantity'];
-    const missingFields = requiredFields.filter(field => !newPrescription[field]);
+    const missingFields = requiredFields.filter(field => !newPrescription[field] && newPrescription[field] !== 0);
     
     if (missingFields.length > 0) {
       toast({
@@ -149,7 +152,9 @@ const Prescriptions = () => {
     
     const prescription = {
       id: newId,
-      ...newPrescription
+      ...newPrescription,
+      quantity: Number(newPrescription.quantity),
+      refills: Number(newPrescription.refills)
     };
     
     setPrescriptions([...prescriptions, prescription]);
@@ -161,8 +166,8 @@ const Prescriptions = () => {
       doctor: "",
       medication: "",
       dosage: "",
-      quantity: "",
-      refills: "",
+      quantity: 0,
+      refills: 0,
       issueDate: format(new Date(), 'yyyy-MM-dd'),
       expiryDate: format(new Date(new Date().setMonth(new Date().getMonth() + 1)), 'yyyy-MM-dd'),
       status: "active",

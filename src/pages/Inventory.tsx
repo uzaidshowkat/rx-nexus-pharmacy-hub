@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -283,7 +282,7 @@ const Inventory = () => {
                 id="stock"
                 type="number"
                 value={newProduct.stock}
-                onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
+                onChange={(e) => setNewProduct({...newProduct, stock: Number(e.target.value)})}
                 className="col-span-3"
               />
             </div>
@@ -296,7 +295,7 @@ const Inventory = () => {
                 type="number"
                 step="0.01"
                 value={newProduct.price}
-                onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                onChange={(e) => setNewProduct({...newProduct, price: Number(e.target.value)})}
                 className="col-span-3"
               />
             </div>
