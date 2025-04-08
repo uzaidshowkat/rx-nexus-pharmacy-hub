@@ -3,10 +3,14 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, DollarSign, TrendingUp, CreditCard, UserPlus } from "lucide-react";
-import { sales } from '@/components/purchases/PurchaseData';
+import { sales as initialSales } from '@/components/purchases/PurchaseData';
 import SalesTable from '@/components/sales/SalesTable';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { v4 as uuidv4 } from 'uuid';
 
 type SaleItem = {
   product: string;
@@ -25,9 +29,17 @@ type Sale = {
 }
 
 const Sales = () => {
-  const [salesList, setSalesList] = useState<Sale[]>(sales);
+  const [salesList, setSalesList] = useState<Sale[]>(initialSales);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [isSaleDetailsOpen, setIsSaleDetailsOpen] = useState(false);
+  const [isNewSaleOpen, setIsNewSaleOpen] = useState(false);
+  
+  // New sale form states
+  const [newSaleCustomer, setNewSaleCustomer] = useState('');
+  const [newSaleItems, setNewSaleItems] = useState<SaleItem[]>([
+    { product: 'Paracetamol', quantity: 1, price: 5.99, total: 5.99 }
+  ]);
+  const [newSalePaymentMethod, setNewSalePaymentMethod] = useState('Credit Card');
   
   // Calculate sales metrics
   const todaySales = salesList
@@ -52,10 +64,86 @@ const Sales = () => {
   };
 
   const handleCreateNewSale = () => {
+    setIsNewSaleOpen(true);
+  };
+  
+  const addItemToSale = () => {
+    setNewSaleItems(prev => [...prev, { product: '', quantity: 1, price: 0, total: 0 }]);
+  };
+  
+  const updateNewSaleItem = (index: number, field: keyof SaleItem, value: string | number) => {
+    const updatedItems = [...newSaleItems];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      [field]: value
+    };
+    
+    // Recalculate total if quantity or price changes
+    if (field === 'quantity' || field === 'price') {
+      updatedItems[index].total = updatedItems[index].quantity * updatedItems[index].price;
+    }
+    
+    setNewSaleItems(updatedItems);
+  };
+  
+  const removeItemFromSale = (index: number) => {
+    if (newSaleItems.length > 1) {
+      setNewSaleItems(prev => prev.filter((_, i) => i !== index));
+    } else {
+      toast({
+        title: "Cannot Remove Item",
+        description: "Sale must have at least one item",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const calculateNewSaleTotal = () => {
+    return newSaleItems.reduce((sum, item) => sum + item.total, 0);
+  };
+  
+  const handleSaveNewSale = () => {
+    if (!newSaleCustomer) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a customer name",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (newSaleItems.some(item => !item.product || item.quantity <= 0)) {
+      toast({
+        title: "Invalid Items",
+        description: "Please fill in all product details correctly",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newSale: Sale = {
+      id: uuidv4().substring(0, 8),
+      date: new Date().toISOString(),
+      customer: newSaleCustomer,
+      items: newSaleItems,
+      totalAmount: calculateNewSaleTotal(),
+      paymentMethod: newSalePaymentMethod
+    };
+    
+    setSalesList(prev => [newSale, ...prev]);
+    setIsNewSaleOpen(false);
+    resetNewSaleForm();
+    
     toast({
-      title: "New Sale",
-      description: "The new sale feature is coming soon!",
+      title: "Sale Created",
+      description: `Sale #${newSale.id} has been created successfully`,
     });
+  };
+  
+  const resetNewSaleForm = () => {
+    setNewSaleCustomer('');
+    setNewSaleItems([{ product: 'Paracetamol', quantity: 1, price: 5.99, total: 5.99 }]);
+    setNewSalePaymentMethod('Credit Card');
   };
 
   return (
@@ -202,6 +290,129 @@ const Sales = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* New Sale Dialog */}
+      <Dialog open={isNewSaleOpen} onOpenChange={setIsNewSaleOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Create New Sale</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customer">Customer</Label>
+                <Input 
+                  id="customer" 
+                  placeholder="Customer name" 
+                  value={newSaleCustomer}
+                  onChange={(e) => setNewSaleCustomer(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment">Payment Method</Label>
+                <Select 
+                  value={newSalePaymentMethod}
+                  onValueChange={setNewSalePaymentMethod}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Debit Card">Debit Card</SelectItem>
+                    <SelectItem value="Insurance">Insurance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium">Items</h3>
+                <Button size="sm" variant="outline" onClick={addItemToSale}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Item
+                </Button>
+              </div>
+              
+              <div className="border rounded-md">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="py-2 px-3 text-left">Product</th>
+                      <th className="py-2 px-3 text-center w-24">Quantity</th>
+                      <th className="py-2 px-3 text-right w-32">Price</th>
+                      <th className="py-2 px-3 text-right w-32">Total</th>
+                      <th className="py-2 px-3 w-16"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {newSaleItems.map((item, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="py-2 px-3">
+                          <Input 
+                            value={item.product}
+                            onChange={(e) => updateNewSaleItem(index, 'product', e.target.value)}
+                            placeholder="Product name"
+                          />
+                        </td>
+                        <td className="py-2 px-3">
+                          <Input 
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => updateNewSaleItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                          />
+                        </td>
+                        <td className="py-2 px-3">
+                          <Input 
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.price}
+                            onChange={(e) => updateNewSaleItem(index, 'price', parseFloat(e.target.value) || 0)}
+                            className="text-right"
+                            placeholder="0.00"
+                          />
+                        </td>
+                        <td className="py-2 px-3 text-right font-medium">
+                          ${item.total.toFixed(2)}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => removeItemFromSale(index)}
+                            className="h-8 w-8 p-0"
+                          >
+                            &times;
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="font-medium">
+                      <td className="py-3 px-3 text-right" colSpan={3}>Total:</td>
+                      <td className="py-3 px-3 text-right">${calculateNewSaleTotal().toFixed(2)}</td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewSaleOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNewSale}>
+              Create Sale
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
