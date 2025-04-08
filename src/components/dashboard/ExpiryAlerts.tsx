@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface ExpiryItem {
   id: string;
@@ -20,11 +22,49 @@ const expiryItems: ExpiryItem[] = [
 ];
 
 const ExpiryAlerts = () => {
+  const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleAction = (item: ExpiryItem) => {
+    toast({
+      title: "Action taken",
+      description: `${item.name} marked for review.`,
+    });
+  };
+
+  const handleViewAll = () => {
+    navigate("/inventory", { state: { filter: "expiringSoon" } });
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast({
+        title: "Expiry data refreshed",
+        description: "Medication expiry dates have been updated.",
+      });
+    }, 1000);
+  };
+
   return (
     <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-medium">Expiry Alerts</CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs gap-1">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-center">
+          <CardTitle className="text-lg font-medium">Expiry Alerts</CardTitle>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="ml-2 h-8 w-8"
+            onClick={handleRefresh}
+            isLoading={isRefreshing}
+            tooltip="Refresh expiry data"
+          >
+            <RefreshCw size={16} />
+          </Button>
+        </div>
+        <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleViewAll}>
           View All <ArrowRight size={14} />
         </Button>
       </CardHeader>
@@ -50,6 +90,7 @@ const ExpiryAlerts = () => {
                 className={`h-7 text-xs ${
                   item.daysRemaining <= 10 ? 'border-red-200 hover:bg-red-100' : 'border-yellow-200 hover:bg-yellow-100'
                 }`}
+                onClick={() => handleAction(item)}
               >
                 Action
               </Button>

@@ -1,9 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, PackageMinus } from 'lucide-react';
+import { ArrowRight, PackageMinus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface StockItem {
   id: string;
@@ -21,11 +23,49 @@ const lowStockItems: StockItem[] = [
 ];
 
 const LowStockItems = () => {
+  const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleReorder = (id: string, name: string) => {
+    toast({
+      title: "Reorder initiated",
+      description: `Added ${name} to your purchase order list.`,
+    });
+  };
+
+  const handleViewAll = () => {
+    navigate("/inventory", { state: { filter: "lowStock" } });
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast({
+        title: "Stock data refreshed",
+        description: "Low stock inventory has been updated.",
+      });
+    }, 1000);
+  };
+
   return (
     <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-medium">Low Stock Alerts</CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs gap-1">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-center">
+          <CardTitle className="text-lg font-medium">Low Stock Alerts</CardTitle>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="ml-2 h-8 w-8"
+            onClick={handleRefresh}
+            isLoading={isRefreshing}
+            tooltip="Refresh stock data"
+          >
+            <RefreshCw size={16} />
+          </Button>
+        </div>
+        <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleViewAll}>
           View All <ArrowRight size={14} />
         </Button>
       </CardHeader>
@@ -37,7 +77,12 @@ const LowStockItems = () => {
                 <PackageMinus size={16} className="text-amber-500" />
                 <span className="font-medium ml-2">{item.name}</span>
               </div>
-              <Button variant="outline" size="sm" className="h-7 text-xs">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={() => handleReorder(item.id, item.name)}
+              >
                 Reorder
               </Button>
             </div>
