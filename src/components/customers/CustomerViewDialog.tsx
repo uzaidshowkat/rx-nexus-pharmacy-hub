@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 type Customer = {
@@ -34,6 +34,9 @@ const CustomerViewDialog: React.FC<CustomerViewDialogProps> = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Customer Details</DialogTitle>
+          <DialogDescription>
+            View detailed information about this customer.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-1">
@@ -71,7 +74,7 @@ const CustomerViewDialog: React.FC<CustomerViewDialogProps> = ({
             <p className="text-sm text-muted-foreground">Purchase of over-the-counter medication on {new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>

@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Eye } from "lucide-react";
+import { Search, Filter, Eye, Calendar, Download } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 type SaleItem = {
   product: string;
@@ -47,6 +48,22 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onView }) => {
     setFilteredSales(filtered);
   };
 
+  const handleFilter = () => {
+    toast({
+      title: "Filter Sales",
+      description: "Opening sales filter options",
+    });
+    // In a real app, this would open a filter modal or dropdown
+  };
+
+  const handleExportData = () => {
+    toast({
+      title: "Export Data",
+      description: "Sales data exported successfully",
+    });
+    // In a real app, this would trigger a data export
+  };
+
   // Update filtered sales when original list changes
   useEffect(() => {
     if (searchTerm) {
@@ -75,9 +92,13 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onView }) => {
           />
         </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Button variant="outline" className="w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={handleFilter}>
             <Filter className="h-4 w-4 mr-2" />
             Filter
+          </Button>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={handleExportData}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
           </Button>
         </div>
       </div>
@@ -96,22 +117,30 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onView }) => {
             </tr>
           </thead>
           <tbody>
-            {filteredSales.map((sale) => (
-              <tr key={sale.id} className="border-b transition-colors hover:bg-muted/50">
-                <td className="p-2 align-middle">{sale.id}</td>
-                <td className="p-2 align-middle">{new Date(sale.date).toLocaleDateString()}</td>
-                <td className="p-2 align-middle">{sale.customer}</td>
-                <td className="p-2 align-middle">{sale.items.length} items</td>
-                <td className="p-2 align-middle">${sale.totalAmount.toFixed(2)}</td>
-                <td className="p-2 align-middle">{sale.paymentMethod}</td>
-                <td className="p-2 align-middle">
-                  <Button variant="ghost" size="sm" onClick={() => onView(sale)}>
-                    <Eye className="h-4 w-4" />
-                    View
-                  </Button>
+            {filteredSales.length > 0 ? (
+              filteredSales.map((sale) => (
+                <tr key={sale.id} className="border-b transition-colors hover:bg-muted/50">
+                  <td className="p-2 align-middle">{sale.id}</td>
+                  <td className="p-2 align-middle">{new Date(sale.date).toLocaleDateString()}</td>
+                  <td className="p-2 align-middle">{sale.customer}</td>
+                  <td className="p-2 align-middle">{sale.items.length} items</td>
+                  <td className="p-2 align-middle">${sale.totalAmount.toFixed(2)}</td>
+                  <td className="p-2 align-middle">{sale.paymentMethod}</td>
+                  <td className="p-2 align-middle">
+                    <Button variant="ghost" size="sm" onClick={() => onView(sale)}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                  No sales found matching your search.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

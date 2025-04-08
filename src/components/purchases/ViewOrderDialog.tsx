@@ -2,6 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 type PurchaseOrder = {
   id: string;
@@ -26,6 +27,19 @@ const ViewOrderDialog: React.FC<ViewOrderDialogProps> = ({
   onMarkDelivered
 }) => {
   if (!order) return null;
+
+  const handleEditOrder = () => {
+    toast({
+      title: "Edit Order",
+      description: `Opening edit form for order ${order.id}`,
+    });
+    // In a real app, this would open an edit form or navigate to an edit page
+  };
+
+  const handleMarkDelivered = () => {
+    onMarkDelivered(order.id);
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,8 +88,8 @@ const ViewOrderDialog: React.FC<ViewOrderDialogProps> = ({
           
           {order.status === "pending" && (
             <div className="mt-6 flex justify-between">
-              <Button variant="outline">Edit Order</Button>
-              <Button onClick={() => onMarkDelivered(order.id)}>
+              <Button variant="outline" onClick={handleEditOrder}>Edit Order</Button>
+              <Button onClick={handleMarkDelivered}>
                 Mark as Delivered
               </Button>
             </div>
