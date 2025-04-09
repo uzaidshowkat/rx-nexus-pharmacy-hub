@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,39 +10,67 @@ import { sales } from "@/components/purchases/PurchaseData";
 
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// Generate dummy data if sales data is not available
+const generateDummyData = () => {
+  return monthNames.map(month => ({
+    name: month,
+    sales: Math.floor(Math.random() * 10000) + 1000
+  }));
+};
+
+// Generate sample product data
+const generateSampleTopProducts = () => {
+  const products = [
+    'Paracetamol', 'Amoxicillin', 'Ibuprofen', 'Aspirin', 'Simvastatin',
+    'Loratadine', 'Omeprazole', 'Lisinopril', 'Metformin', 'Atorvastatin'
+  ];
+  
+  return products.slice(0, 5).map((name, index) => ({
+    name,
+    sales: Math.floor(Math.random() * 5000) + 500,
+    rank: index + 1
+  }));
+};
+
 const Reports = () => {
   const [activeReport, setActiveReport] = useState<string>("sales");
   
-  // Generate sales data by month based on the sales data
-  const monthlySalesData = monthNames.map(month => {
-    const salesForMonth = sales.filter(sale => {
-      const saleDate = new Date(sale.date);
-      return monthNames[saleDate.getMonth()] === month;
-    });
-    const totalAmount = salesForMonth.reduce((sum, sale) => sum + sale.totalAmount, 0);
-    return { name: month, sales: totalAmount };
-  });
+  // Generate sales data by month based on the sales data or use dummy data
+  const monthlySalesData = sales?.length 
+    ? monthNames.map(month => {
+        const salesForMonth = sales.filter(sale => {
+          const saleDate = new Date(sale.date);
+          return monthNames[saleDate.getMonth()] === month;
+        });
+        const totalAmount = salesForMonth.reduce((sum, sale) => sum + sale.totalAmount, 0);
+        return { name: month, sales: totalAmount };
+      })
+    : generateDummyData();
 
-  // Top products data
-  const productSales: Record<string, number> = {};
-  sales.forEach(sale => {
-    sale.items.forEach(item => {
-      if (productSales[item.product]) {
-        productSales[item.product] += item.total;
-      } else {
-        productSales[item.product] = item.total;
-      }
-    });
-  });
-
-  const topProducts = Object.entries(productSales)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, sales], index) => ({
-      name,
-      sales,
-      rank: index + 1
-    }));
+  // Top products data - use actual data if available, otherwise use sample data
+  const topProducts = sales?.length 
+    ? (() => {
+        const productSales: Record<string, number> = {};
+        sales.forEach(sale => {
+          sale.items.forEach(item => {
+            if (productSales[item.product]) {
+              productSales[item.product] += item.total;
+            } else {
+              productSales[item.product] = item.total;
+            }
+          });
+        });
+        
+        return Object.entries(productSales)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, sales], index) => ({
+            name,
+            sales,
+            rank: index + 1
+          }));
+      })()
+    : generateSampleTopProducts();
 
   const handleDownload = () => {
     // Simulate file download
@@ -184,7 +213,7 @@ const Reports = () => {
                 </TabsList>
                 
                 <TabsContent value="chart">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={250}>
                     <RechartsBarChart data={monthlySalesData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} />
@@ -199,7 +228,7 @@ const Reports = () => {
                 </TabsContent>
                 
                 <TabsContent value="area">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={250}>
                     <RechartsAreaChart data={monthlySalesData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} />
@@ -214,7 +243,7 @@ const Reports = () => {
                 </TabsContent>
                 
                 <TabsContent value="line">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={250}>
                     <RechartsLineChart data={monthlySalesData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} />

@@ -1,8 +1,10 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Bell, Search, Settings, User } from 'lucide-react';
+import { Bell, Search, Settings, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +14,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const Header = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+    });
+    
+    // Allow toast to be visible briefly before redirect
+    setTimeout(() => {
+      navigate("/login");
+    }, 500);
+  };
+
   return (
     <header className="border-b bg-white flex items-center justify-between p-4">
       <div className="flex items-center">
@@ -31,7 +47,7 @@ const Header = () => {
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </Button>
         
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
           <Settings size={20} />
         </Button>
         
@@ -42,10 +58,13 @@ const Header = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

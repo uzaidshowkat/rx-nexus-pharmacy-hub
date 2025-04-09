@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, DollarSign, TrendingUp, CreditCard, UserPlus } from "lucide-react";
 import { sales as initialSales } from '@/components/purchases/PurchaseData';
 import SalesTable from '@/components/sales/SalesTable';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,25 @@ type Sale = {
   totalAmount: number;
   paymentMethod: string;
 }
+
+// Sample products and customers data for demonstration
+const sampleProducts = [
+  { id: 1, name: 'Paracetamol', price: 5.99 },
+  { id: 2, name: 'Amoxicillin', price: 12.50 },
+  { id: 3, name: 'Ibuprofen', price: 4.99 },
+  { id: 4, name: 'Loratadine', price: 8.75 },
+  { id: 5, name: 'Aspirin', price: 3.25 },
+  { id: 6, name: 'Omeprazole', price: 15.99 },
+  { id: 7, name: 'Simvastatin', price: 22.50 },
+];
+
+const sampleCustomers = [
+  { id: 1, name: 'John Smith' },
+  { id: 2, name: 'Emily Johnson' },
+  { id: 3, name: 'Michael Brown' },
+  { id: 4, name: 'Sarah Davis' },
+  { id: 5, name: 'Robert Wilson' },
+];
 
 const Sales = () => {
   const [salesList, setSalesList] = useState<Sale[]>(initialSales);
@@ -81,6 +100,15 @@ const Sales = () => {
     // Recalculate total if quantity or price changes
     if (field === 'quantity' || field === 'price') {
       updatedItems[index].total = updatedItems[index].quantity * updatedItems[index].price;
+    }
+    
+    // If selecting a product from dropdown, update the price too
+    if (field === 'product') {
+      const selectedProduct = sampleProducts.find(p => p.name === value);
+      if (selectedProduct) {
+        updatedItems[index].price = selectedProduct.price;
+        updatedItems[index].total = updatedItems[index].quantity * selectedProduct.price;
+      }
     }
     
     setNewSaleItems(updatedItems);
@@ -144,6 +172,14 @@ const Sales = () => {
     setNewSaleCustomer('');
     setNewSaleItems([{ product: 'Paracetamol', quantity: 1, price: 5.99, total: 5.99 }]);
     setNewSalePaymentMethod('Credit Card');
+  };
+  
+  const handleGenerateInvoice = (saleId: string) => {
+    toast({
+      title: "Invoice Generated",
+      description: `Invoice for sale ${saleId} has been generated.`,
+    });
+    setIsSaleDetailsOpen(false);
   };
 
   return (
@@ -278,13 +314,7 @@ const Sales = () => {
                 <Button variant="outline" onClick={() => setIsSaleDetailsOpen(false)}>
                   Close
                 </Button>
-                <Button onClick={() => {
-                  setIsSaleDetailsOpen(false);
-                  toast({
-                    title: "Invoice Generated",
-                    description: `Invoice for sale ${selectedSale.id} has been generated.`,
-                  });
-                }}>
+                <Button onClick={() => handleGenerateInvoice(selectedSale.id)}>
                   Generate Invoice
                 </Button>
               </div>
@@ -298,18 +328,28 @@ const Sales = () => {
         <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Create New Sale</DialogTitle>
+            <DialogDescription>Add products and customer information to create a new sale</DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6 py-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="customer">Customer</Label>
-                <Input 
-                  id="customer" 
-                  placeholder="Customer name" 
+                <Select 
                   value={newSaleCustomer}
-                  onChange={(e) => setNewSaleCustomer(e.target.value)}
-                />
+                  onValueChange={setNewSaleCustomer}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sampleCustomers.map(customer => (
+                      <SelectItem key={customer.id} value={customer.name}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="payment">Payment Method</Label>
@@ -354,11 +394,21 @@ const Sales = () => {
                     {newSaleItems.map((item, index) => (
                       <tr key={index} className="border-b">
                         <td className="py-2 px-3">
-                          <Input 
+                          <Select 
                             value={item.product}
-                            onChange={(e) => updateNewSaleItem(index, 'product', e.target.value)}
-                            placeholder="Product name"
-                          />
+                            onValueChange={(value) => updateNewSaleItem(index, 'product', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a product" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sampleProducts.map(product => (
+                                <SelectItem key={product.id} value={product.name}>
+                                  {product.name} - ${product.price.toFixed(2)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="py-2 px-3">
                           <Input 
