@@ -1,9 +1,7 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AreaChart, BarChart, Calendar, Download, FileText, Filter, LineChart, PieChart } from "lucide-react";
-import { ChartContainer } from "@/components/ui/chart";
 import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart as RechartsAreaChart, Line, LineChart as RechartsLineChart } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
@@ -46,17 +44,38 @@ const Reports = () => {
     }));
 
   const handleDownload = () => {
+    // Simulate file download
+    const element = document.createElement('a');
+    const reportType = activeReport.charAt(0).toUpperCase() + activeReport.slice(1);
+    const filename = `${reportType}_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(`${reportType} Report Data`));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    
     toast({
       title: "Report Downloaded",
-      description: "The report has been downloaded successfully",
+      description: `The ${reportType} report has been downloaded successfully as ${filename}`,
     });
   };
 
   const handleGenerateReport = () => {
+    // Simulate report generation with loading state
     toast({
-      title: "Report Generated",
-      description: "New report has been generated and is ready for download",
+      title: "Generating Report",
+      description: "Please wait while we generate your report...",
     });
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      toast({
+        title: "Report Generated",
+        description: `New ${activeReport} report has been generated and is ready for download`,
+      });
+    }, 1500);
   };
 
   const handleSelectReport = (report: string) => {

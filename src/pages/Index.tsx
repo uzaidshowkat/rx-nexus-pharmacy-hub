@@ -1,13 +1,23 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to dashboard page instead of login
-    navigate('/dashboard');
+    // Show toast when redirecting
+    toast({
+      description: "Welcome to RxNexus! Redirecting to dashboard...",
+    });
+    
+    // Redirect to dashboard page
+    const redirectTimer = setTimeout(() => {
+      navigate('/dashboard');
+    }, 1500); // Give the toast a moment to be seen
+    
+    return () => clearTimeout(redirectTimer);
   }, [navigate]);
 
   return (

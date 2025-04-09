@@ -2,6 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 type Customer = {
   id: number;
@@ -28,6 +29,35 @@ const CustomerViewDialog: React.FC<CustomerViewDialogProps> = ({
   onEdit
 }) => {
   if (!customer) return null;
+  
+  const handlePrintDetails = () => {
+    toast({
+      title: "Customer Details",
+      description: "Printing customer details...",
+    });
+    // In a real app, this would trigger a print functionality
+    window.print();
+  };
+
+  const handleDownloadData = () => {
+    toast({
+      title: "Download Started",
+      description: "Customer data is being downloaded as CSV",
+    });
+    
+    // Create and trigger a download for the customer data
+    const csvContent = `Name,Email,Phone,Address,Date Registered,Prescriptions,Last Visit\n${customer.name},${customer.email},${customer.phone},"${customer.address}",${customer.dateRegistered},${customer.prescriptions},${customer.lastVisit}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `customer_${customer.id}_details.csv`);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,14 +104,17 @@ const CustomerViewDialog: React.FC<CustomerViewDialogProps> = ({
             <p className="text-sm text-muted-foreground">Purchase of over-the-counter medication on {new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
           </div>
         </div>
-        <DialogFooter className="pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
+          <Button variant="outline" onClick={handlePrintDetails} className="w-full sm:w-auto">
+            Print Details
+          </Button>
+          <Button variant="outline" onClick={handleDownloadData} className="w-full sm:w-auto">
+            Download Data
           </Button>
           <Button onClick={() => {
             onOpenChange(false);
             onEdit(customer);
-          }}>
+          }} className="w-full sm:w-auto">
             Edit Customer
           </Button>
         </DialogFooter>

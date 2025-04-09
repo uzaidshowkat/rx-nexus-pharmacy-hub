@@ -3,6 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { Download, Printer } from "lucide-react";
 
 type PurchaseOrder = {
   id: string;
@@ -39,6 +40,35 @@ const ViewOrderDialog: React.FC<ViewOrderDialogProps> = ({
   const handleMarkDelivered = () => {
     onMarkDelivered(order.id);
     onOpenChange(false);
+  };
+  
+  const handlePrintOrder = () => {
+    toast({
+      title: "Printing Order",
+      description: `Printing purchase order ${order.id}`,
+    });
+    // In a real app, this would print the order
+    window.print();
+  };
+  
+  const handleDownloadOrder = () => {
+    toast({
+      title: "Download Started",
+      description: `Purchase order ${order.id} is being downloaded`,
+    });
+    
+    // Create and trigger download of order data
+    const orderData = `Order ID,Supplier,Date,Items,Total,Status\n${order.id},${order.supplier},${order.date},${order.items},${order.total},${order.status}`;
+    const blob = new Blob([orderData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `purchase_order_${order.id}.csv`);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -86,14 +116,25 @@ const ViewOrderDialog: React.FC<ViewOrderDialogProps> = ({
             </div>
           </div>
           
-          {order.status === "pending" && (
-            <div className="mt-6 flex justify-between">
-              <Button variant="outline" onClick={handleEditOrder}>Edit Order</Button>
-              <Button onClick={handleMarkDelivered}>
-                Mark as Delivered
-              </Button>
-            </div>
-          )}
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handlePrintOrder} className="flex items-center gap-1">
+              <Printer className="h-4 w-4" />
+              Print
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadOrder} className="flex items-center gap-1">
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+            
+            {order.status === "pending" && (
+              <>
+                <Button variant="outline" onClick={handleEditOrder}>Edit Order</Button>
+                <Button onClick={handleMarkDelivered}>
+                  Mark as Delivered
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)}>
