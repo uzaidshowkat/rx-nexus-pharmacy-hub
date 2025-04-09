@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,14 +28,12 @@ const Returns = () => {
   const [selectedReturn, setSelectedReturn] = useState<Return | null>(null);
   const [isViewReturnOpen, setIsViewReturnOpen] = useState(false);
   
-  // Form states for new return
   const [newReturnProduct, setNewReturnProduct] = useState('');
   const [newReturnCustomer, setNewReturnCustomer] = useState('');
   const [newReturnQuantity, setNewReturnQuantity] = useState('1');
   const [newReturnReason, setNewReturnReason] = useState('Defective');
   const [newReturnAmount, setNewReturnAmount] = useState('');
 
-  // Calculate return metrics
   const pendingReturns = returnsList.filter(item => item.status === "pending").length;
   const processedReturns = returnsList.filter(item => item.status === "processed").length;
   
@@ -66,7 +63,6 @@ const Returns = () => {
       description: "Generating returns report for download...",
     });
     
-    // Create CSV content from returns data
     const headers = "ID,Product,Customer,Quantity,Reason,Date,Status,Refund Amount\n";
     const rows = returnsList.map(item => 
       `${item.id},${item.product},${item.customer},${item.quantity},"${item.reason}",${item.date},${item.status},${item.refundAmount}`
@@ -227,7 +223,6 @@ const Returns = () => {
         </CardContent>
       </Card>
       
-      {/* New Return Dialog */}
       <Dialog open={isNewReturnOpen} onOpenChange={setIsNewReturnOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -312,7 +307,6 @@ const Returns = () => {
         </DialogContent>
       </Dialog>
       
-      {/* View Return Dialog */}
       <Dialog open={isViewReturnOpen} onOpenChange={setIsViewReturnOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

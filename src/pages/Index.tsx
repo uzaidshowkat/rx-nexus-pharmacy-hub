@@ -9,7 +9,8 @@ const Index = () => {
   useEffect(() => {
     // Show toast when redirecting
     toast({
-      description: "Welcome to RxNexus! Redirecting to dashboard...",
+      title: "Welcome to RxNexus",
+      description: "Redirecting to dashboard...",
     });
     
     // Redirect to dashboard page
@@ -23,8 +24,13 @@ const Index = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold">RxNexus</h1>
-        <p className="text-muted-foreground mt-2">Redirecting to dashboard...</p>
+        <h1 className="text-4xl font-bold mb-4">RxNexus</h1>
+        <p className="text-lg text-muted-foreground">Your complete pharmacy management solution</p>
+        <div className="mt-8">
+          <div className="animate-pulse text-muted-foreground">
+            Redirecting to dashboard...
+          </div>
+        </div>
       </div>
     </div>
   );

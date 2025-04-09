@@ -3,6 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { Download, Printer } from "lucide-react";
 
 type Customer = {
   id: number;
@@ -32,8 +33,8 @@ const CustomerViewDialog: React.FC<CustomerViewDialogProps> = ({
   
   const handlePrintDetails = () => {
     toast({
-      title: "Customer Details",
-      description: "Printing customer details...",
+      title: "Printing Customer Details",
+      description: "Sending customer details to printer...",
     });
     // In a real app, this would trigger a print functionality
     window.print();
@@ -106,9 +107,11 @@ const CustomerViewDialog: React.FC<CustomerViewDialogProps> = ({
         </div>
         <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
           <Button variant="outline" onClick={handlePrintDetails} className="w-full sm:w-auto">
+            <Printer className="mr-2 h-4 w-4" />
             Print Details
           </Button>
           <Button variant="outline" onClick={handleDownloadData} className="w-full sm:w-auto">
+            <Download className="mr-2 h-4 w-4" />
             Download Data
           </Button>
           <Button onClick={() => {

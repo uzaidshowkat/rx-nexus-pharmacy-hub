@@ -1,8 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 type Return = {
   id: string;
@@ -27,42 +34,45 @@ const ReturnsTable: React.FC<ReturnsTableProps> = ({
   onView
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [filteredReturns, setFilteredReturns] = useState<Return[]>(returns);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
+    applyFilters(term, filterStatus);
+  };
+  
+  const handleFilterChange = (status: string) => {
+    setFilterStatus(status);
+    applyFilters(searchTerm, status);
+  };
+  
+  const applyFilters = (term: string, status: string) => {
+    let filtered = returns;
     
-    if (!term) {
-      setFilteredReturns(returns);
-      return;
+    // Apply search term filter
+    if (term) {
+      filtered = filtered.filter(
+        item => 
+          item.product.toLowerCase().includes(term) || 
+          item.customer.toLowerCase().includes(term) ||
+          item.id.toLowerCase().includes(term)
+      );
     }
     
-    const filtered = returns.filter(
-      item => 
-        item.product.toLowerCase().includes(term) || 
-        item.customer.toLowerCase().includes(term) ||
-        item.id.toLowerCase().includes(term)
-    );
+    // Apply status filter
+    if (status !== 'all') {
+      filtered = filtered.filter(item => item.status === status);
+    }
     
     setFilteredReturns(filtered);
   };
 
   // Update filtered returns when original list changes
   useEffect(() => {
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const filtered = returns.filter(
-        item => 
-          item.product.toLowerCase().includes(term) || 
-          item.customer.toLowerCase().includes(term) ||
-          item.id.toLowerCase().includes(term)
-      );
-      setFilteredReturns(filtered);
-    } else {
-      setFilteredReturns(returns);
-    }
-  }, [returns, searchTerm]);
+    applyFilters(searchTerm, filterStatus);
+  }, [returns]);
 
   return (
     <div className="space-y-4">
@@ -77,10 +87,19 @@ const ReturnsTable: React.FC<ReturnsTableProps> = ({
           />
         </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Button variant="outline" className="w-full sm:w-auto">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
+          <Select 
+            value={filterStatus}
+            onValueChange={handleFilterChange}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Returns</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processed">Processed</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       
@@ -100,37 +119,45 @@ const ReturnsTable: React.FC<ReturnsTableProps> = ({
             </tr>
           </thead>
           <tbody>
-            {filteredReturns.map((item) => (
-              <tr key={item.id} className="border-b transition-colors hover:bg-muted/50">
-                <td className="p-2 align-middle">{item.id}</td>
-                <td className="p-2 align-middle">{item.product}</td>
-                <td className="p-2 align-middle">{item.customer}</td>
-                <td className="p-2 align-middle">{item.quantity}</td>
-                <td className="p-2 align-middle">{new Date(item.date).toLocaleDateString()}</td>
-                <td className="p-2 align-middle">{item.reason}</td>
-                <td className="p-2 align-middle">${item.refundAmount.toFixed(2)}</td>
-                <td className="p-2 align-middle">
-                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${
-                    item.status === "processed"
-                      ? "bg-green-500 text-white"
-                      : "bg-amber-500 text-white"
-                  }`}>
-                    {item.status === "processed" ? "Processed" : "Pending"}
-                  </span>
-                </td>
-                <td className="p-2 align-middle">
-                  {item.status === "pending" ? (
-                    <Button variant="outline" size="sm" onClick={() => onProcess(item.id)}>
-                      Process
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" size="sm" onClick={() => onView(item)}>
-                      View
-                    </Button>
-                  )}
+            {filteredReturns.length > 0 ? (
+              filteredReturns.map((item) => (
+                <tr key={item.id} className="border-b transition-colors hover:bg-muted/50">
+                  <td className="p-2 align-middle">{item.id}</td>
+                  <td className="p-2 align-middle">{item.product}</td>
+                  <td className="p-2 align-middle">{item.customer}</td>
+                  <td className="p-2 align-middle">{item.quantity}</td>
+                  <td className="p-2 align-middle">{new Date(item.date).toLocaleDateString()}</td>
+                  <td className="p-2 align-middle">{item.reason}</td>
+                  <td className="p-2 align-middle">${item.refundAmount.toFixed(2)}</td>
+                  <td className="p-2 align-middle">
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${
+                      item.status === "processed"
+                        ? "bg-green-500 text-white"
+                        : "bg-amber-500 text-white"
+                    }`}>
+                      {item.status === "processed" ? "Processed" : "Pending"}
+                    </span>
+                  </td>
+                  <td className="p-2 align-middle">
+                    {item.status === "pending" ? (
+                      <Button variant="outline" size="sm" onClick={() => onProcess(item.id)}>
+                        Process
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => onView(item)}>
+                        View
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={9} className="p-4 text-center text-muted-foreground">
+                  No returns found matching your search criteria
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
