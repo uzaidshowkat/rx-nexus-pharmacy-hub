@@ -5,22 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Package, AlertTriangle, Clock } from "lucide-react";
 import InventoryTable from '@/components/inventory/InventoryTable';
 import InventoryFormDialog from '@/components/inventory/InventoryFormDialog';
-import { inventoryItems } from '@/components/purchases/PurchaseData';
 import { toast } from "@/hooks/use-toast";
-
-type InventoryItem = {
-  id: number;
-  name: string;
-  sku: string;
-  category: string;
-  stock: number;
-  reorderLevel: number;
-  unitPrice: number;
-  expiryDate: string;
-}
+import { useInventoryStore, InventoryItem } from '@/stores/inventoryStore';
 
 const Inventory = () => {
-  const [items, setItems] = useState<InventoryItem[]>(inventoryItems);
+  const { items, addItem, updateItem, deleteItem } = useInventoryStore();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | undefined>(undefined);
@@ -40,7 +29,7 @@ const Inventory = () => {
   const handleAddItem = (newItem: Partial<InventoryItem>) => {
     const id = Math.max(0, ...items.map(item => item.id)) + 1;
     const itemWithId = { ...newItem, id } as InventoryItem;
-    setItems([...items, itemWithId]);
+    addItem(itemWithId);
     toast({
       title: "Item Added",
       description: "The new inventory item has been added successfully.",
@@ -50,9 +39,7 @@ const Inventory = () => {
   const handleEditItem = (updatedItem: Partial<InventoryItem>) => {
     if (!updatedItem.id) return;
     
-    setItems(items.map(item => 
-      item.id === updatedItem.id ? { ...item, ...updatedItem } : item
-    ));
+    updateItem(updatedItem as InventoryItem);
     
     toast({
       title: "Item Updated",
@@ -61,7 +48,11 @@ const Inventory = () => {
   };
 
   const handleDeleteItem = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
+    deleteItem(id);
+    toast({
+      title: "Item Deleted",
+      description: "The inventory item has been removed successfully.",
+    });
   };
 
   const openEditDialog = (item: InventoryItem) => {

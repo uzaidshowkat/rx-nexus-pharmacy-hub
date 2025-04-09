@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,13 +8,7 @@ import { FileText, Package } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductList from "@/components/purchases/ProductList";
 import OrderSummary from "@/components/purchases/OrderSummary";
-
-type Supplier = {
-  id: number;
-  name: string;
-  contact: string;
-  email: string;
-};
+import { Supplier } from '@/stores/supplierStore';
 
 type Product = {
   id: number;
@@ -48,6 +42,16 @@ const NewOrderDialog: React.FC<NewOrderDialogProps> = ({
   const [selectedTab, setSelectedTab] = useState<string>("products");
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState<string>("");
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (!open) {
+      setSelectedSupplier("");
+      setOrderItems([]);
+      setProductSearch("");
+      setSelectedTab("products");
+    }
+  }, [open]);
 
   // Filtered products based on search
   const filteredProducts = productSearch 
@@ -98,19 +102,8 @@ const NewOrderDialog: React.FC<NewOrderDialogProps> = ({
   // Calculate order total
   const orderTotal = orderItems.reduce((sum, item) => sum + item.total, 0);
 
-  // Reset form state when dialog closes
-  const handleDialogChange = (open: boolean) => {
-    if (!open) {
-      setSelectedSupplier("");
-      setOrderItems([]);
-      setProductSearch("");
-      setSelectedTab("products");
-    }
-    onOpenChange(open);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleDialogChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>New Purchase Order</DialogTitle>

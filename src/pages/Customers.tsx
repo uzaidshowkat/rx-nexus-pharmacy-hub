@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Users, UserPlus, Calendar } from "lucide-react";
-import { customers } from '@/components/purchases/PurchaseData';
+import { customers as initialCustomers } from '@/components/purchases/PurchaseData';
 import CustomerTable from '@/components/customers/CustomerTable';
 import CustomerViewDialog from '@/components/customers/CustomerViewDialog';
+import CustomerFormDialog from '@/components/customers/CustomerFormDialog';
 import { toast } from "@/hooks/use-toast";
+import { useCustomerStore } from "@/stores/customerStore";
 
 type Customer = {
   id: number;
@@ -20,14 +22,15 @@ type Customer = {
 }
 
 const Customers = () => {
-  const [customersList, setCustomersList] = useState<Customer[]>(customers);
+  const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomerStore();
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   // Calculate customer metrics
-  const totalCustomers = customersList.length;
-  const newCustomersThisMonth = customersList.filter(customer => {
+  const totalCustomers = customers.length;
+  const newCustomersThisMonth = customers.filter(customer => {
     const registeredDate = new Date(customer.dateRegistered);
     const today = new Date();
     return (
@@ -36,7 +39,7 @@ const Customers = () => {
     );
   }).length;
 
-  const visitorsThisWeek = customersList.filter(customer => {
+  const visitorsThisWeek = customers.filter(customer => {
     const visitDate = new Date(customer.lastVisit);
     const today = new Date();
     const sevenDaysAgo = new Date();
@@ -44,7 +47,7 @@ const Customers = () => {
     return visitDate >= sevenDaysAgo && visitDate <= today;
   }).length;
 
-  const activeCustomers = customersList.filter(customer => 
+  const activeCustomers = customers.filter(customer => 
     customer.prescriptions > 0
   ).length;
 
@@ -56,16 +59,10 @@ const Customers = () => {
   const handleEditCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setIsEditDialogOpen(true);
-    
-    // For demo purposes, just show a toast since we haven't implemented the edit dialog
-    toast({
-      title: "Edit Customer",
-      description: `Editing customer ${customer.name}`,
-    });
   };
 
   const handleDeleteCustomer = (id: number) => {
-    setCustomersList(customersList.filter(customer => customer.id !== id));
+    deleteCustomer(id);
     
     toast({
       title: "Customer Deleted",
@@ -73,11 +70,49 @@ const Customers = () => {
     });
   };
 
+  const handleAddNewCustomer = () => {
+    setIsAddDialogOpen(true);
+  };
+
+  const handleSaveCustomer = (customerData: Partial<Customer>) => {
+    if (selectedCustomer && customerData.id) {
+      // Update existing customer
+      updateCustomer({ ...customerData, id: selectedCustomer.id } as Customer);
+      
+      toast({
+        title: "Customer Updated",
+        description: "Customer information has been updated successfully.",
+      });
+    } else {
+      // Add new customer
+      const today = new Date().toISOString();
+      
+      const newCustomer: Customer = {
+        id: Math.max(0, ...customers.map(c => c.id)) + 1,
+        name: customerData.name || "New Customer",
+        email: customerData.email || "",
+        phone: customerData.phone || "",
+        address: customerData.address || "",
+        dateRegistered: today,
+        prescriptions: 0,
+        lastVisit: today,
+        ...customerData
+      };
+      
+      addCustomer(newCustomer);
+      
+      toast({
+        title: "Customer Added",
+        description: "New customer has been added successfully.",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Customer Management</h1>
-        <Button>
+        <Button onClick={handleAddNewCustomer}>
           <Plus className="mr-2 h-4 w-4" />
           Add New Customer
         </Button>
@@ -138,7 +173,7 @@ const Customers = () => {
         </CardHeader>
         <CardContent>
           <CustomerTable 
-            customers={customersList}
+            customers={customers}
             onView={handleViewCustomer}
             onEdit={handleEditCustomer}
             onDelete={handleDeleteCustomer}
@@ -151,6 +186,21 @@ const Customers = () => {
         onOpenChange={setIsViewDialogOpen}
         customer={selectedCustomer}
         onEdit={handleEditCustomer}
+      />
+
+      <CustomerFormDialog 
+        open={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen}
+        customer={selectedCustomer}
+        onSave={handleSaveCustomer}
+        title="Edit Customer" 
+      />
+
+      <CustomerFormDialog 
+        open={isAddDialogOpen} 
+        onOpenChange={setIsAddDialogOpen}
+        onSave={handleSaveCustomer}
+        title="Add New Customer" 
       />
     </div>
   );

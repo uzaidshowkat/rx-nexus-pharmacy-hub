@@ -17,6 +17,10 @@ const Header = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Clear any stored user data
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userData');
+    
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
