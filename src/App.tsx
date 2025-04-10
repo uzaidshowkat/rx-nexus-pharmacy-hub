@@ -20,7 +20,7 @@ import Compliance from "./pages/Compliance";
 import EPrescriptions from "./pages/EPrescriptions";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
-import { AuthProvider } from "./hooks/useAuth";
+import { AuthProvider } from "./hooks/useAuth.jsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
