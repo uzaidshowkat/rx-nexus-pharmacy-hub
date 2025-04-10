@@ -20,7 +20,7 @@ import Compliance from "./pages/Compliance";
 import EPrescriptions from "./pages/EPrescriptions";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
-import { AuthProvider } from "./hooks/useAuth.jsx";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,8 +33,15 @@ const queryClient = new QueryClient({
 });
 
 // Protected route component
-const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    // You could add a loading spinner here
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>;
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -43,16 +50,38 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Auth route component (redirects to dashboard if already logged in)
+const AuthRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    // You could add a loading spinner here
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>;
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={
+              <AuthRoute>
+                <Login />
+              </AuthRoute>
+            } />
             <Route path="/" element={
               <ProtectedRoute>
                 <MainLayout />
@@ -74,8 +103,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from "@/hooks/use-toast";
 import { useInventoryStore } from '@/stores/inventoryStore';
 import { useCustomerStore } from '@/stores/customerStore';
+import { useAuth } from '@/hooks/useAuth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,25 +18,22 @@ import {
 
 const Header = () => {
   const navigate = useNavigate();
+  const { logout, currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const { getItemsByCategoryOrSearch } = useInventoryStore();
   const { customers } = useCustomerStore();
 
-  const handleLogout = () => {
-    // Clear any stored user data
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('currentUser');
+  const handleLogout = async () => {
+    // Log out using Supabase
+    await logout();
     
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
     });
     
-    // Allow toast to be visible briefly before redirect
-    setTimeout(() => {
-      navigate("/login");
-    }, 500);
+    // Navigate to login page
+    navigate("/login");
   };
 
   const handleSearch = (e) => {
@@ -59,7 +57,6 @@ const Header = () => {
     });
     
     // Navigate to search results page or open a modal with results
-    // For now, let's navigate to inventory if items found, customers if customers found
     if (items.length > 0) {
       navigate('/inventory', { state: { searchQuery } });
     } else if (foundCustomers.length > 0) {
@@ -109,6 +106,10 @@ const Header = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <div className="px-3 py-2 text-sm font-medium border-b mb-1">
+              {currentUser?.name || "User"}
+              <div className="text-xs font-normal text-muted-foreground">{currentUser?.role || "User"}</div>
+            </div>
             <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')}>Profile</DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
