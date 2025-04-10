@@ -25,6 +25,7 @@ const Header = () => {
     // Clear any stored user data
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userData');
+    localStorage.removeItem('currentUser');
     
     toast({
       title: "Logged out",

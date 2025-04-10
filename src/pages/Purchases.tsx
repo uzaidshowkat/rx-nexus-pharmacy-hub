@@ -1,203 +1,237 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, User, Package, TrendingUp, Clock } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import PurchaseStatCards from "@/components/purchases/PurchaseStatCards";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PurchaseOrdersTable from "@/components/purchases/PurchaseOrdersTable";
 import NewOrderDialog from "@/components/purchases/NewOrderDialog";
 import ViewOrderDialog from "@/components/purchases/ViewOrderDialog";
+import { toast } from "@/hooks/use-toast";
 import { useSupplierStore } from '@/stores/supplierStore';
-import { useInventoryStore } from '@/stores/inventoryStore';
 import SupplierFormDialog from '@/components/purchases/SupplierFormDialog';
+import PurchaseStats from '@/components/purchases/PurchaseStats';
+import { PurchaseOrder } from '@/components/purchases/PurchaseData';
 
-type OrderItem = {
-  id: number;
+// Sample purchase orders for the demo
+const demoOrders = [
+  {
+    id: "PO-00123",
+    date: "2023-04-01",
+    supplier: "MedSupply Corp",
+    status: "Received",
+    total: 1250.99,
+    items: [
+      { name: "Acetaminophen 500mg", quantity: 10, price: 25.99, total: 259.90 },
+      { name: "Amoxicillin 250mg", quantity: 5, price: 42.50, total: 212.50 },
+      { name: "Lisinopril 10mg", quantity: 8, price: 18.95, total: 151.60 },
+      { name: "Metformin 500mg", quantity: 15, price: 15.20, total: 228.00 },
+      { name: "Atorvastatin 40mg", quantity: 20, price: 19.95, total: 399.00 }
+    ]
+  },
+  {
+    id: "PO-00124",
+    date: "2023-04-03",
+    supplier: "Healthcare Distributors",
+    status: "Pending",
+    total: 876.50,
+    items: [
+      { name: "Aspirin 81mg", quantity: 30, price: 8.99, total: 269.70 },
+      { name: "Ibuprofen 200mg", quantity: 20, price: 12.45, total: 249.00 },
+      { name: "Ranitidine 150mg", quantity: 15, price: 23.85, total: 357.75 }
+    ]
+  },
+  {
+    id: "PO-00125",
+    date: "2023-04-05",
+    supplier: "PharmWholesale Inc",
+    status: "In Transit",
+    total: 2154.25,
+    items: [
+      { name: "Sertraline 50mg", quantity: 10, price: 45.25, total: 452.50 },
+      { name: "Fluoxetine 20mg", quantity: 12, price: 38.75, total: 465.00 },
+      { name: "Omeprazole 20mg", quantity: 25, price: 29.75, total: 743.75 },
+      { name: "Simvastatin 20mg", quantity: 18, price: 27.39, total: 493.02 }
+    ]
+  }
+];
+
+export interface Supplier {
+  id: string;
   name: string;
-  sku: string;
-  category: string;
-  unitCost: number;
-  quantity: number;
-  total: number;
-};
-
-type PurchaseOrder = {
-  id: number;
-  orderNumber: string;
-  supplier: string;
-  supplierId: number;
-  date: string;
-  total: number;
-  status: string;
-  items: OrderItem[];
-};
+  contact: string;
+  email: string;
+  phone: string;
+  address: string;
+}
 
 const Purchases = () => {
-  const { suppliers, addSupplier } = useSupplierStore();
-  const { items: inventoryItems } = useInventoryStore();
+  const [activeTab, setActiveTab] = useState("orders");
+  const [orders, setOrders] = useState<PurchaseOrder[]>(demoOrders);
+  const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+  const [isViewOrderOpen, setIsViewOrderOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+
+  // Supplier management
+  const [isSupplierFormOpen, setIsSupplierFormOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
   
-  // Transform inventory items to product format for order dialog
-  const products = inventoryItems.map(item => ({
-    id: item.id,
-    name: item.name,
-    sku: item.sku,
-    category: item.category,
-    unitCost: item.unitPrice * 0.7, // Example cost calculation (70% of retail price)
-  }));
+  const { suppliers, deleteSupplier } = useSupplierStore();
 
-  const [orders, setOrders] = useState<PurchaseOrder[]>([
-    {
-      id: 1,
-      orderNumber: "PO-2023-001",
-      supplier: "MedSupply Corp",
-      supplierId: 1,
-      date: "2025-04-01",
-      total: 1250.75,
-      status: "Received",
-      items: [
-        { id: 1, name: "Generic Paracetamol", sku: "MED001", category: "Analgesics", unitCost: 0.50, quantity: 500, total: 250 },
-        { id: 2, name: "Generic Cetirizine", sku: "MED015", category: "Antihistamines", unitCost: 0.75, quantity: 300, total: 225 },
-        { id: 3, name: "Generic Ibuprofen", sku: "MED003", category: "Anti-inflammatory", unitCost: 0.55, quantity: 1410, total: 775.5 }
-      ]
-    },
-    {
-      id: 2,
-      orderNumber: "PO-2023-002",
-      supplier: "Healthcare Distributors",
-      supplierId: 2,
-      date: "2025-04-03",
-      total: 875.25,
-      status: "Processing",
-      items: [
-        { id: 4, name: "Vitamin D Supplements", sku: "VIT002", category: "Vitamins", unitCost: 3.50, quantity: 100, total: 350 },
-        { id: 5, name: "Vitamin C Tablets", sku: "VIT001", category: "Vitamins", unitCost: 2.75, quantity: 120, total: 330 },
-        { id: 6, name: "Calcium Supplements", sku: "VIT003", category: "Vitamins", unitCost: 3.90, quantity: 50, total: 195 }
-      ]
-    },
-    {
-      id: 3,
-      orderNumber: "PO-2023-003",
-      supplier: "PharmWholesale Inc",
-      supplierId: 3,
-      date: "2025-04-05",
-      total: 2190.80,
-      status: "Pending",
-      items: [
-        { id: 7, name: "Asthma Inhaler", sku: "MED101", category: "Respiratory", unitCost: 18.50, quantity: 50, total: 925 },
-        { id: 8, name: "Blood Pressure Monitor", sku: "DEV001", category: "Devices", unitCost: 45.25, quantity: 15, total: 678.75 },
-        { id: 9, name: "Diabetic Test Strips", sku: "DEV005", category: "Devices", unitCost: 19.75, quantity: 30, total: 592.5 }
-      ]
+  const filteredSuppliers = suppliers.filter(supplier => 
+    supplier.name.toLowerCase().includes(supplierSearchQuery.toLowerCase()) ||
+    supplier.contact.toLowerCase().includes(supplierSearchQuery.toLowerCase()) ||
+    supplier.email.toLowerCase().includes(supplierSearchQuery.toLowerCase())
+  );
+
+  const handleCreateOrder = () => {
+    setIsNewOrderOpen(true);
+  };
+
+  const handleAddSupplier = () => {
+    setSelectedSupplier(null);
+    setIsSupplierFormOpen(true);
+  };
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setIsSupplierFormOpen(true);
+  };
+
+  const handleDeleteSupplier = (id: string) => {
+    deleteSupplier(id);
+    toast({
+      title: "Supplier Deleted",
+      description: "The supplier has been successfully removed.",
+    });
+  };
+  
+  const handleOrderCreated = (order: PurchaseOrder) => {
+    setOrders([...orders, order]);
+    toast({
+      title: "Order Created",
+      description: `Purchase order ${order.id} has been created successfully.`,
+    });
+    setIsNewOrderOpen(false);
+  };
+
+  const handleViewOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      setSelectedOrder(order);
+      setIsViewOrderOpen(true);
     }
-  ]);
-
-  const [viewOrder, setViewOrder] = useState<PurchaseOrder | null>(null);
-  const [isNewOrderDialogOpen, setIsNewOrderDialogOpen] = useState(false);
-  const [isViewOrderDialogOpen, setIsViewOrderDialogOpen] = useState(false);
-  const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
-
-  const handleViewOrder = (order: PurchaseOrder) => {
-    setViewOrder(order);
-    setIsViewOrderDialogOpen(true);
-  };
-
-  const handleCreateOrder = (supplierId: string, orderItems: OrderItem[]) => {
-    const supplier = suppliers.find(s => s.id === parseInt(supplierId));
-    
-    if (!supplier || orderItems.length === 0) return;
-    
-    const total = orderItems.reduce((sum, item) => sum + item.total, 0);
-    
-    const newOrder: PurchaseOrder = {
-      id: orders.length + 1,
-      orderNumber: `PO-2025-${String(orders.length + 1).padStart(3, '0')}`,
-      supplier: supplier.name,
-      supplierId: supplier.id,
-      date: new Date().toISOString().split('T')[0],
-      total,
-      status: "Pending",
-      items: orderItems
-    };
-    
-    setOrders([...orders, newOrder]);
-    
-    setIsNewOrderDialogOpen(false);
-    
-    toast({
-      title: "Purchase Order Created",
-      description: `Order ${newOrder.orderNumber} has been created successfully.`,
-    });
-  };
-
-  const handleAddSupplier = (supplierData: Partial<Supplier>) => {
-    const newSupplierId = Math.max(0, ...suppliers.map(s => s.id)) + 1;
-    
-    const newSupplier = {
-      id: newSupplierId,
-      name: supplierData.name || "",
-      contact: supplierData.contact || "",
-      email: supplierData.email || "",
-      phone: supplierData.phone || "",
-      address: supplierData.address || "",
-    };
-    
-    addSupplier(newSupplier);
-    
-    toast({
-      title: "Supplier Added",
-      description: `${newSupplier.name} has been added to your suppliers.`,
-    });
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Purchase Orders</h1>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => setIsSupplierDialogOpen(true)}>
-            <User className="mr-2 h-4 w-4" />
-            Add Supplier
-          </Button>
-          <Button onClick={() => setIsNewOrderDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New Purchase Order
-          </Button>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold tracking-tight">Purchase Management</h1>
       
-      <PurchaseStatCards orders={orders} />
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Purchase Orders</CardTitle>
-          <CardDescription>Manage your purchase orders and suppliers</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="orders" className="space-y-4">
+          <PurchaseStats orders={orders} />
+          
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Purchase Orders</h2>
+            <Button onClick={handleCreateOrder}>New Order</Button>
+          </div>
+          
           <PurchaseOrdersTable 
             orders={orders} 
-            onViewOrder={handleViewOrder}
+            onViewOrder={handleViewOrder} 
           />
-        </CardContent>
-      </Card>
-
-      <NewOrderDialog 
-        open={isNewOrderDialogOpen}
-        onOpenChange={setIsNewOrderDialogOpen}
-        suppliers={suppliers}
-        products={products}
-        onCreateOrder={handleCreateOrder}
-      />
-
-      <ViewOrderDialog 
-        open={isViewOrderDialogOpen}
-        onOpenChange={setIsViewOrderDialogOpen}
-        order={viewOrder}
-      />
-
+        </TabsContent>
+        
+        <TabsContent value="suppliers" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Suppliers</h2>
+            <Button onClick={handleAddSupplier}>Add Supplier</Button>
+          </div>
+          
+          <div className="flex w-full max-w-sm items-center space-x-2 mb-4">
+            <Input 
+              placeholder="Search suppliers..." 
+              value={supplierSearchQuery}
+              onChange={(e) => setSupplierSearchQuery(e.target.value)}
+            />
+            <Button variant="secondary" onClick={() => setSupplierSearchQuery("")}>Clear</Button>
+          </div>
+          
+          {filteredSuppliers.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredSuppliers.map((supplier) => (
+                <Card key={supplier.id}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">{supplier.name}</CardTitle>
+                    <CardDescription>{supplier.contact}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Email: </span>{supplier.email}
+                    </div>
+                    <div>
+                      <span className="font-medium">Phone: </span>{supplier.phone}
+                    </div>
+                    <div>
+                      <span className="font-medium">Address: </span>{supplier.address}
+                    </div>
+                  </CardContent>
+                  <div className="flex justify-end p-4 pt-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleEditSupplier(supplier)}
+                      className="mr-2"
+                    >
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDeleteSupplier(supplier.id)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-8 border rounded-lg bg-gray-50">
+              <p className="text-muted-foreground">No suppliers found matching your search criteria.</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+      
+      {isNewOrderOpen && (
+        <NewOrderDialog
+          open={isNewOrderOpen}
+          onClose={() => setIsNewOrderOpen(false)}
+          onOrderCreated={handleOrderCreated}
+          suppliers={suppliers}
+        />
+      )}
+      
+      {isViewOrderOpen && selectedOrder && (
+        <ViewOrderDialog
+          open={isViewOrderOpen}
+          onClose={() => setIsViewOrderOpen(false)}
+          order={selectedOrder}
+        />
+      )}
+      
       <SupplierFormDialog
-        open={isSupplierDialogOpen}
-        onOpenChange={setIsSupplierDialogOpen}
-        onSave={handleAddSupplier}
+        open={isSupplierFormOpen}
+        onClose={() => setIsSupplierFormOpen(false)}
+        supplier={selectedSupplier}
       />
     </div>
   );

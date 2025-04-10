@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,19 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useUserStore } from "@/stores/userStore";
+import UserFormDialog from "@/components/settings/UserFormDialog";
+import UserRolePermissionsDialog from "@/components/settings/UserRolePermissionsDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const generalSchema = z.object({
   pharmacyName: z.string().min(2, "Pharmacy name is required"),
@@ -55,6 +67,13 @@ const Settings = () => {
     refill: true,
     systemUpdates: true
   });
+  
+  const { users, deleteUser } = useUserStore();
+  const [isUserFormOpen, setIsUserFormOpen] = useState(false);
+  const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: "Admin",
@@ -174,6 +193,38 @@ const Settings = () => {
       title: "Settings Saved",
       description: "General settings have been updated successfully.",
     });
+  };
+
+  const handleAddUser = () => {
+    setSelectedUser(null);
+    setIsUserFormOpen(true);
+  };
+  
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setIsUserFormOpen(true);
+  };
+  
+  const handleViewPermissions = (user) => {
+    setSelectedUser(user);
+    setIsPermissionsDialogOpen(true);
+  };
+  
+  const handleDeleteUser = (user) => {
+    setUserToDelete(user);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const confirmDeleteUser = () => {
+    if (userToDelete) {
+      deleteUser(userToDelete.id);
+      toast({
+        title: "User Deleted",
+        description: `${userToDelete.name} has been successfully removed.`,
+      });
+      setUserToDelete(null);
+      setIsDeleteDialogOpen(false);
+    }
   };
 
   return (
@@ -465,8 +516,11 @@ const Settings = () => {
                     <Switch checked={profileData.security.twoFactor} onCheckedChange={toggleTwoFactor} />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-sm">Session Timeout (minutes)</h4>
+                      <p className="text-sm text-muted-foreground">Set the session timeout duration</p>
+                    </div>
                     <Input 
                       id="sessionTimeout" 
                       type="number" 
@@ -497,71 +551,56 @@ const Settings = () => {
                       <th className="h-10 px-4 text-left align-middle font-medium">Role</th>
                       <th className="h-10 px-4 text-left align-middle font-medium">Status</th>
                       <th className="h-10 px-4 text-left align-middle font-medium">Last Login</th>
-                      <th className="h-10 px-4 text-left align-middle font-medium">Actions</th>
+                      <th className="h-10 px-4 text-right align-middle font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="[&_tr:last-child]:border-0">
-                    <tr className="border-b transition-colors hover:bg-muted/50">
-                      <td className="p-2 align-middle">Admin User</td>
-                      <td className="p-2 align-middle">admin@rxnexus.com</td>
-                      <td className="p-2 align-middle">Administrator</td>
-                      <td className="p-2 align-middle">
-                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500 text-white">Active</span>
-                      </td>
-                      <td className="p-2 align-middle">Today, 8:30 AM</td>
-                      <td className="p-2 align-middle">
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          toast({
-                            title: "Edit User",
-                            description: "Editing Admin User",
-                          });
-                        }}>Edit</Button>
-                      </td>
-                    </tr>
-                    <tr className="border-b transition-colors hover:bg-muted/50">
-                      <td className="p-2 align-middle">Pharmacist</td>
-                      <td className="p-2 align-middle">pharmacist@rxnexus.com</td>
-                      <td className="p-2 align-middle">Pharmacist</td>
-                      <td className="p-2 align-middle">
-                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500 text-white">Active</span>
-                      </td>
-                      <td className="p-2 align-middle">Today, 9:15 AM</td>
-                      <td className="p-2 align-middle">
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          toast({
-                            title: "Edit User",
-                            description: "Editing Pharmacist User",
-                          });
-                        }}>Edit</Button>
-                      </td>
-                    </tr>
-                    <tr className="border-b transition-colors hover:bg-muted/50">
-                      <td className="p-2 align-middle">Technician</td>
-                      <td className="p-2 align-middle">tech@rxnexus.com</td>
-                      <td className="p-2 align-middle">Pharmacy Technician</td>
-                      <td className="p-2 align-middle">
-                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500 text-white">Active</span>
-                      </td>
-                      <td className="p-2 align-middle">Yesterday, 5:30 PM</td>
-                      <td className="p-2 align-middle">
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          toast({
-                            title: "Edit User",
-                            description: "Editing Technician User",
-                          });
-                        }}>Edit</Button>
-                      </td>
-                    </tr>
+                    {users.map((user) => (
+                      <tr key={user.id} className="border-b transition-colors hover:bg-muted/50">
+                        <td className="p-2 align-middle">{user.name}</td>
+                        <td className="p-2 align-middle">{user.email}</td>
+                        <td className="p-2 align-middle">{user.role}</td>
+                        <td className="p-2 align-middle">
+                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${
+                            user.status === 'active' ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'
+                          }`}>
+                            {user.status === 'active' ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="p-2 align-middle">{user.lastLogin}</td>
+                        <td className="p-2 align-middle text-right">
+                          <div className="flex justify-end space-x-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleViewPermissions(user)}
+                            >
+                              Permissions
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditUser(user)}
+                            >
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                              onClick={() => handleDeleteUser(user)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
               <div className="flex justify-end mt-4">
-                <Button onClick={() => {
-                  toast({
-                    title: "Add User",
-                    description: "Opening user creation form",
-                  });
-                }}>Add New User</Button>
+                <Button onClick={handleAddUser}>Add New User</Button>
               </div>
             </CardContent>
           </Card>
@@ -742,6 +781,36 @@ const Settings = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <UserFormDialog 
+        open={isUserFormOpen}
+        onClose={() => setIsUserFormOpen(false)}
+        user={selectedUser}
+        isEdit={!!selectedUser}
+      />
+      
+      <UserRolePermissionsDialog
+        open={isPermissionsDialogOpen}
+        onClose={() => setIsPermissionsDialogOpen(false)}
+        userId={selectedUser?.id}
+      />
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the user {userToDelete?.name}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Pill } from "lucide-react";
+import { useUserStore } from "@/stores/userStore";
 
 const Login = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const { users } = useUserStore();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -29,15 +31,30 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Find user with matching email
+      const user = users.find(u => u.email.toLowerCase() === formData.email.toLowerCase());
       
-      // Demo credentials check - in a real app, this would be an API call
-      if (formData.email === "admin@pharmacy.com" && formData.password === "password") {
+      // In a real app, this would validate password with backend
+      // For demo purposes, we're allowing any password for found users
+      if (user) {
+        // Store current user in localStorage
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userData', JSON.stringify({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }));
+        
+        localStorage.setItem('currentUser', user.id);
+        
         toast({
           title: "Login successful",
-          description: "Welcome to the Pharmacy Management System",
+          description: `Welcome back, ${user.name}`,
         });
+        
+        // Update last login time (not implemented in this demo)
+        
         navigate("/dashboard");
       } else {
         toast({
@@ -101,14 +118,14 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" isLoading={isLoading}>
-                Sign in
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="border-t p-4">
             <p className="text-xs text-muted-foreground text-center w-full">
-              Demo credentials: admin@pharmacy.com / password
+              Available logins: admin@rxnexus.com, pharmacist@rxnexus.com, tech@rxnexus.com (any password)
             </p>
           </CardFooter>
         </Card>

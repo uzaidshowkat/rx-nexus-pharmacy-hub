@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./components/layout/MainLayout";
@@ -20,6 +20,7 @@ import Compliance from "./pages/Compliance";
 import EPrescriptions from "./pages/EPrescriptions";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
+import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,33 +32,50 @@ const queryClient = new QueryClient({
   },
 });
 
+// Protected route component
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/purchases" element={<Purchases />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/prescriptions" element={<Prescriptions />} />
-            <Route path="/returns" element={<Returns />} />
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/compliance" element={<Compliance />} />
-            <Route path="/e-prescriptions" element={<EPrescriptions />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/purchases" element={<Purchases />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/prescriptions" element={<Prescriptions />} />
+              <Route path="/returns" element={<Returns />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/compliance" element={<Compliance />} />
+              <Route path="/e-prescriptions" element={<EPrescriptions />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </BrowserRouter>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
