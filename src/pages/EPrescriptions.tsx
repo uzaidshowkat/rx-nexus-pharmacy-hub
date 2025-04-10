@@ -1,16 +1,131 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
+
+// Sample data for e-prescriptions
+const initialEPrescriptions = [
+  {
+    id: "ERX00456",
+    patient: "Maria Rodriguez",
+    provider: "Dr. Anthony Miller",
+    medication: "Metformin 500mg",
+    received: "Today, 9:45 AM",
+    priority: "high",
+    status: "new"
+  },
+  {
+    id: "ERX00455",
+    patient: "James Wilson",
+    provider: "Dr. Sarah Johnson",
+    medication: "Lisinopril 10mg",
+    received: "Today, 9:30 AM",
+    priority: "medium",
+    status: "new"
+  },
+  {
+    id: "ERX00454",
+    patient: "Robert Taylor",
+    provider: "Dr. Lisa Wong",
+    medication: "Atorvastatin 20mg",
+    received: "Today, 9:15 AM",
+    priority: "low",
+    status: "processing"
+  }
+];
 
 const EPrescriptions = () => {
+  const [prescriptions, setPrescriptions] = useState(initialEPrescriptions);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Count prescriptions by status
+  const newCount = prescriptions.filter(p => p.status === 'new').length;
+  const processingCount = prescriptions.filter(p => p.status === 'processing').length;
+  const readyCount = prescriptions.filter(p => p.status === 'ready').length;
+  const completedCount = prescriptions.filter(p => p.status === 'completed').length;
+  
+  // Handle sync button
+  const handleSync = () => {
+    toast({
+      title: "Syncing E-Prescriptions",
+      description: "Retrieving latest prescription data...",
+    });
+    
+    // Simulate receiving new prescriptions
+    setTimeout(() => {
+      const newPrescription = {
+        id: `ERX00${Math.floor(Math.random() * 1000)}`,
+        patient: "Alex Johnson",
+        provider: "Dr. Michael Smith",
+        medication: "Amoxicillin 500mg",
+        received: "Just now",
+        priority: "medium",
+        status: "new"
+      };
+      
+      setPrescriptions([newPrescription, ...prescriptions]);
+      
+      toast({
+        title: "Sync Complete",
+        description: "1 new e-prescription received",
+      });
+    }, 1500);
+  };
+  
+  // Handle prescription process
+  const handleProcess = (id) => {
+    setPrescriptions(prescriptions.map(p => 
+      p.id === id ? { ...p, status: 'processing' } : p
+    ));
+    
+    toast({
+      title: "Prescription Processing",
+      description: `Prescription ${id} is now being processed`,
+    });
+  };
+  
+  // Handle prescription complete
+  const handleComplete = (id) => {
+    setPrescriptions(prescriptions.map(p => 
+      p.id === id ? { ...p, status: 'ready' } : p
+    ));
+    
+    toast({
+      title: "Prescription Ready",
+      description: `Prescription ${id} is now ready for pickup`,
+    });
+  };
+  
+  // Handle searching prescriptions
+  const handleSearch = (e) => {
+    e.preventDefault();
+    toast({
+      title: "Searching Prescriptions",
+      description: `Searching for "${searchQuery}"...`,
+    });
+  };
+  
+  // Filter prescriptions based on search and status
+  const filteredPrescriptions = prescriptions.filter(p => {
+    const matchesSearch = searchQuery === '' || 
+      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.patient.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.medication.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">E-Prescription Management</h1>
-        <Button>Sync E-Prescriptions</Button>
+        <Button onClick={handleSync}>Sync E-Prescriptions</Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -19,7 +134,7 @@ const EPrescriptions = () => {
             <CardTitle className="text-sm font-medium">New E-Prescriptions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">14</div>
+            <div className="text-2xl font-bold">{newCount}</div>
             <p className="text-xs text-muted-foreground">Awaiting processing</p>
           </CardContent>
         </Card>
@@ -29,7 +144,7 @@ const EPrescriptions = () => {
             <CardTitle className="text-sm font-medium">Processing</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">6</div>
+            <div className="text-2xl font-bold">{processingCount}</div>
             <p className="text-xs text-muted-foreground">Being prepared</p>
           </CardContent>
         </Card>
@@ -39,7 +154,7 @@ const EPrescriptions = () => {
             <CardTitle className="text-sm font-medium">Ready for Pickup</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">9</div>
+            <div className="text-2xl font-bold">{readyCount}</div>
             <p className="text-xs text-muted-foreground">Awaiting patient pickup</p>
           </CardContent>
         </Card>
@@ -49,28 +164,37 @@ const EPrescriptions = () => {
             <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">23</div>
+            <div className="text-2xl font-bold">{completedCount}</div>
             <p className="text-xs text-muted-foreground">Successfully dispensed</p>
           </CardContent>
         </Card>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4 items-center">
-        <div className="relative flex-1 w-full">
+        <form onSubmit={handleSearch} className="relative flex-1 w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search prescriptions..." className="pl-8 w-full" />
-        </div>
+          <Input 
+            placeholder="Search prescriptions..." 
+            className="pl-8 w-full" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </form>
         <div className="flex items-center space-x-2 w-full sm:w-auto">
           <Button variant="outline" className="flex items-center">
             <Filter className="mr-2 h-4 w-4" />
             Filter
           </Button>
-          <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-[150px]">
-            <option>All Status</option>
-            <option>New</option>
-            <option>Processing</option>
-            <option>Ready</option>
-            <option>Completed</option>
+          <select 
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-[150px]"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="new">New</option>
+            <option value="processing">Processing</option>
+            <option value="ready">Ready</option>
+            <option value="completed">Completed</option>
           </select>
         </div>
       </div>
@@ -96,54 +220,72 @@ const EPrescriptions = () => {
                 </tr>
               </thead>
               <tbody className="[&_tr:last-child]:border-0">
-                <tr className="border-b transition-colors hover:bg-muted/50">
-                  <td className="p-2 align-middle">ERX00456</td>
-                  <td className="p-2 align-middle">Maria Rodriguez</td>
-                  <td className="p-2 align-middle">Dr. Anthony Miller</td>
-                  <td className="p-2 align-middle">Metformin 500mg</td>
-                  <td className="p-2 align-middle">Today, 9:45 AM</td>
-                  <td className="p-2 align-middle">
-                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-red-500 text-white">High</span>
-                  </td>
-                  <td className="p-2 align-middle">
-                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-blue-500 text-white">New</span>
-                  </td>
-                  <td className="p-2 align-middle">
-                    <Button variant="outline" size="sm">Process</Button>
-                  </td>
-                </tr>
-                <tr className="border-b transition-colors hover:bg-muted/50">
-                  <td className="p-2 align-middle">ERX00455</td>
-                  <td className="p-2 align-middle">James Wilson</td>
-                  <td className="p-2 align-middle">Dr. Sarah Johnson</td>
-                  <td className="p-2 align-middle">Lisinopril 10mg</td>
-                  <td className="p-2 align-middle">Today, 9:30 AM</td>
-                  <td className="p-2 align-middle">
-                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-amber-500 text-white">Medium</span>
-                  </td>
-                  <td className="p-2 align-middle">
-                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-blue-500 text-white">New</span>
-                  </td>
-                  <td className="p-2 align-middle">
-                    <Button variant="outline" size="sm">Process</Button>
-                  </td>
-                </tr>
-                <tr className="border-b transition-colors hover:bg-muted/50">
-                  <td className="p-2 align-middle">ERX00454</td>
-                  <td className="p-2 align-middle">Robert Taylor</td>
-                  <td className="p-2 align-middle">Dr. Lisa Wong</td>
-                  <td className="p-2 align-middle">Atorvastatin 20mg</td>
-                  <td className="p-2 align-middle">Today, 9:15 AM</td>
-                  <td className="p-2 align-middle">
-                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500 text-white">Low</span>
-                  </td>
-                  <td className="p-2 align-middle">
-                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-amber-500 text-white">Processing</span>
-                  </td>
-                  <td className="p-2 align-middle">
-                    <Button variant="outline" size="sm">Complete</Button>
-                  </td>
-                </tr>
+                {filteredPrescriptions.map((rx) => (
+                  <tr key={rx.id} className="border-b transition-colors hover:bg-muted/50">
+                    <td className="p-2 align-middle">{rx.id}</td>
+                    <td className="p-2 align-middle">{rx.patient}</td>
+                    <td className="p-2 align-middle">{rx.provider}</td>
+                    <td className="p-2 align-middle">{rx.medication}</td>
+                    <td className="p-2 align-middle">{rx.received}</td>
+                    <td className="p-2 align-middle">
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${
+                        rx.priority === "high"
+                          ? "bg-red-500 text-white"
+                          : rx.priority === "medium"
+                            ? "bg-amber-500 text-white"
+                            : "bg-green-500 text-white"
+                      }`}>
+                        {rx.priority === "high" ? "High" : rx.priority === "medium" ? "Medium" : "Low"}
+                      </span>
+                    </td>
+                    <td className="p-2 align-middle">
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${
+                        rx.status === "new"
+                          ? "bg-blue-500 text-white"
+                          : rx.status === "processing"
+                            ? "bg-amber-500 text-white"
+                            : rx.status === "ready"
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-500 text-white"
+                      }`}>
+                        {rx.status === "new" ? "New" : 
+                         rx.status === "processing" ? "Processing" : 
+                         rx.status === "ready" ? "Ready" : "Completed"}
+                      </span>
+                    </td>
+                    <td className="p-2 align-middle">
+                      {rx.status === "new" && (
+                        <Button variant="outline" size="sm" onClick={() => handleProcess(rx.id)}>
+                          Process
+                        </Button>
+                      )}
+                      {rx.status === "processing" && (
+                        <Button variant="outline" size="sm" onClick={() => handleComplete(rx.id)}>
+                          Complete
+                        </Button>
+                      )}
+                      {rx.status === "ready" && (
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setPrescriptions(prescriptions.map(p => 
+                            p.id === rx.id ? { ...p, status: 'completed' } : p
+                          ));
+                          toast({
+                            title: "Prescription Dispensed",
+                            description: `${rx.id} has been dispensed to patient`,
+                          });
+                        }}>
+                          Dispense
+                        </Button>
+                      )}
+                      {rx.status === "completed" && (
+                        <Button variant="ghost" size="sm" disabled>
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Completed
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

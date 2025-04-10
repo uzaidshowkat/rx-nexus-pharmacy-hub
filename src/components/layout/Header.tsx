@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Bell, Search, Settings, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from "@/hooks/use-toast";
+import { useInventoryStore } from '@/stores/inventoryStore';
+import { useCustomerStore } from '@/stores/customerStore';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +17,9 @@ import {
 
 const Header = () => {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { getItemsByCategoryOrSearch } = useInventoryStore();
+  const { customers } = useCustomerStore();
 
   const handleLogout = () => {
     // Clear any stored user data
@@ -32,18 +37,59 @@ const Header = () => {
     }, 500);
   };
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    
+    if (!searchQuery.trim()) {
+      return;
+    }
+    
+    const items = getItemsByCategoryOrSearch(searchQuery);
+    const foundCustomers = customers.filter(customer => 
+      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    // Show results count in a toast
+    toast({
+      title: "Search Results",
+      description: `Found ${items.length} items and ${foundCustomers.length} customers`,
+    });
+    
+    // Navigate to search results page or open a modal with results
+    // For now, let's navigate to inventory if items found, customers if customers found
+    if (items.length > 0) {
+      navigate('/inventory', { state: { searchQuery } });
+    } else if (foundCustomers.length > 0) {
+      navigate('/customers', { state: { searchQuery } });
+    } else {
+      toast({
+        title: "No Results",
+        description: "No items or customers found for your search",
+      });
+    }
+  };
+
   return (
     <header className="border-b bg-white flex items-center justify-between p-4">
       <div className="flex items-center">
         <SidebarTrigger className="mr-4" />
-        <div className="flex items-center border rounded-md px-3 py-1.5 bg-gray-50 w-64 lg:w-96">
-          <Search size={18} className="mr-2 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-transparent outline-none flex-1 text-sm"
-          />
-        </div>
+        <form onSubmit={handleSearch} className="flex items-center">
+          <div className="flex items-center border rounded-md px-3 py-1.5 bg-gray-50 w-64 lg:w-96">
+            <Search size={18} className="mr-2 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="bg-transparent outline-none flex-1 text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button type="submit" variant="ghost" className="ml-1">
+            <Search size={18} />
+          </Button>
+        </form>
       </div>
       <div className="flex items-center space-x-3">
         <Button variant="ghost" size="icon" className="relative">

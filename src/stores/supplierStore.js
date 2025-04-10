@@ -4,7 +4,7 @@ import { create } from 'zustand';
 // Initial suppliers data
 const initialSuppliers = [
   {
-    id: 1,
+    id: "1",
     name: "MedSupply Corp",
     contact: "John Smith",
     email: "contact@medsupplycorp.com",
@@ -12,7 +12,7 @@ const initialSuppliers = [
     address: "123 Medical Way, Pharma City, CA 90001"
   },
   {
-    id: 2,
+    id: "2",
     name: "Healthcare Distributors",
     contact: "Sarah Johnson",
     email: "info@healthcaredist.com",
@@ -20,7 +20,7 @@ const initialSuppliers = [
     address: "456 Pharmacy Drive, Medicine Town, NY 10001"
   },
   {
-    id: 3,
+    id: "3",
     name: "PharmWholesale Inc",
     contact: "Michael Davis",
     email: "service@pharmwholesale.com",
