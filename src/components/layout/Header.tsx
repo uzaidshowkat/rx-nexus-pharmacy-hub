@@ -36,7 +36,7 @@ const Header = () => {
     navigate("/login");
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!searchQuery.trim()) {

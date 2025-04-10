@@ -11,10 +11,26 @@ import { toast } from "@/hooks/use-toast";
 import { useSupplierStore } from '@/stores/supplierStore';
 import SupplierFormDialog from '@/components/purchases/SupplierFormDialog';
 import PurchaseStats from '@/components/purchases/PurchaseStats';
-import { PurchaseOrder } from '@/components/purchases/PurchaseData';
+
+// Define PurchaseOrder interface to match what's expected
+interface PurchaseOrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface PurchaseOrder {
+  id: string;
+  date: string;
+  supplier: string;
+  status: string;
+  total: number;
+  items: PurchaseOrderItem[];
+}
 
 // Sample purchase orders for the demo
-const demoOrders = [
+const demoOrders: PurchaseOrder[] = [
   {
     id: "PO-00123",
     date: "2023-04-01",
@@ -56,7 +72,8 @@ const demoOrders = [
   }
 ];
 
-export interface Supplier {
+// Ensure this matches the type in supplierStore
+interface Supplier {
   id: string;
   name: string;
   contact: string;
@@ -94,12 +111,12 @@ const Purchases = () => {
     setIsSupplierFormOpen(true);
   };
 
-  const handleEditSupplier = (supplier: Supplier) => {
-    setSelectedSupplier(supplier);
+  const handleEditSupplier = (supplier: any) => {
+    setSelectedSupplier(supplier as Supplier);
     setIsSupplierFormOpen(true);
   };
 
-  const handleDeleteSupplier = (id: string) => {
+  const handleDeleteSupplier = (id: any) => {
     deleteSupplier(id);
     toast({
       title: "Supplier Deleted",
@@ -143,7 +160,7 @@ const Purchases = () => {
           </div>
           
           <PurchaseOrdersTable 
-            orders={orders} 
+            data={orders} 
             onViewOrder={handleViewOrder} 
           />
         </TabsContent>
@@ -213,7 +230,7 @@ const Purchases = () => {
       
       {isNewOrderOpen && (
         <NewOrderDialog
-          open={isNewOrderOpen}
+          isOpen={isNewOrderOpen}
           onClose={() => setIsNewOrderOpen(false)}
           onOrderCreated={handleOrderCreated}
           suppliers={suppliers}
@@ -222,7 +239,7 @@ const Purchases = () => {
       
       {isViewOrderOpen && selectedOrder && (
         <ViewOrderDialog
-          open={isViewOrderOpen}
+          isOpen={isViewOrderOpen}
           onClose={() => setIsViewOrderOpen(false)}
           order={selectedOrder}
         />
