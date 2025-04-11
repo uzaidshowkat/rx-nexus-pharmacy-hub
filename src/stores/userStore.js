@@ -1,4 +1,5 @@
 
+// This file was already JavaScript, but I'll include it here for completeness
 import { create } from 'zustand';
 
 // Initial users data
