@@ -3,13 +3,20 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 
-type PurchaseOrder = {
+interface PurchaseOrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface PurchaseOrder {
   id: string;
   supplier: string;
   date: string;
-  items: number;
-  total: number;
   status: string;
+  total: number;
+  items: PurchaseOrderItem[];
 }
 
 interface PurchaseOrdersTableProps {
@@ -41,15 +48,17 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
               <td className="p-2 align-middle">{order.id}</td>
               <td className="p-2 align-middle">{order.supplier}</td>
               <td className="p-2 align-middle">{order.date}</td>
-              <td className="p-2 align-middle">{order.items} items</td>
+              <td className="p-2 align-middle">{order.items.length} items</td>
               <td className="p-2 align-middle">${order.total.toFixed(2)}</td>
               <td className="p-2 align-middle">
                 <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${
-                  order.status === "pending"
+                  order.status.toLowerCase() === "pending"
                     ? "bg-amber-500 text-white"
+                    : order.status.toLowerCase() === "in transit" 
+                    ? "bg-blue-500 text-white"
                     : "bg-green-500 text-white"
                 }`}>
-                  {order.status === "pending" ? "Pending" : "Delivered"}
+                  {order.status}
                 </span>
               </td>
               <td className="p-2 align-middle">

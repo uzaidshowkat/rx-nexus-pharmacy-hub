@@ -1,143 +1,143 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
-import { Download, Printer } from "lucide-react";
+import { Calendar, Truck, FileCheck } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
-type PurchaseOrder = {
-  id: string;
-  supplier: string;
-  date: string;
-  items: number;
+interface PurchaseOrderItem {
+  name: string;
+  quantity: number;
+  price: number;
   total: number;
+}
+
+interface PurchaseOrder {
+  id: string;
+  date: string;
+  supplier: string;
   status: string;
-};
+  total: number;
+  items: PurchaseOrderItem[];
+}
 
 interface ViewOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  order: PurchaseOrder | null;
-  onMarkDelivered: (orderId: string) => void;
+  order: PurchaseOrder;
 }
 
-const ViewOrderDialog: React.FC<ViewOrderDialogProps> = ({
-  open,
-  onOpenChange,
-  order,
-  onMarkDelivered
-}) => {
-  if (!order) return null;
-
-  const handleEditOrder = () => {
-    toast({
-      title: "Edit Order",
-      description: `Opening edit form for order ${order.id}`,
-    });
-    // In a real app, this would open an edit form or navigate to an edit page
+const ViewOrderDialog: React.FC<ViewOrderDialogProps> = ({ open, onOpenChange, order }) => {
+  // Format currency 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
   };
 
-  const handleMarkDelivered = () => {
-    onMarkDelivered(order.id);
-    onOpenChange(false);
-  };
-  
-  const handlePrintOrder = () => {
-    toast({
-      title: "Printing Order",
-      description: `Printing purchase order ${order.id}`,
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    // In a real app, this would print the order
-    window.print();
-  };
-  
-  const handleDownloadOrder = () => {
-    toast({
-      title: "Download Started",
-      description: `Purchase order ${order.id} is being downloaded`,
-    });
-    
-    // Create and trigger download of order data
-    const orderData = `Order ID,Supplier,Date,Items,Total,Status\n${order.id},${order.supplier},${order.date},${order.items},${order.total},${order.status}`;
-    const blob = new Blob([orderData], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `purchase_order_${order.id}.csv`);
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Purchase Order Details</DialogTitle>
-          <DialogDescription>
-            View information about this purchase order.
-          </DialogDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <DialogTitle className="text-xl">Purchase Order: {order.id}</DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                <Calendar className="inline-block h-4 w-4 mr-1" />
+                {formatDate(order.date)}
+              </p>
+            </div>
+            <Badge 
+              variant={order.status === "Received" ? "default" : 
+                      order.status === "In Transit" ? "secondary" : "outline"}
+              className="capitalize"
+            >
+              {order.status}
+            </Badge>
+          </div>
         </DialogHeader>
-        <div className="py-4">
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Order ID:</div>
-              <div className="col-span-2">{order.id}</div>
+        
+        <div className="space-y-6 my-4">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-medium text-sm mb-1">Supplier</h3>
+              <p className="text-lg">{order.supplier}</p>
             </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Supplier:</div>
-              <div className="col-span-2">{order.supplier}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Date Created:</div>
-              <div className="col-span-2">{order.date}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Total Items:</div>
-              <div className="col-span-2">{order.items}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Total Cost:</div>
-              <div className="col-span-2">${order.total.toFixed(2)}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Status:</div>
-              <div className="col-span-2">
-                <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent ${
-                  order.status === "pending"
-                    ? "bg-amber-500 text-white"
-                    : "bg-green-500 text-white"
-                }`}>
-                  {order.status === "pending" ? "Pending" : "Delivered"}
-                </span>
-              </div>
+            <div className="text-right">
+              <h3 className="font-medium text-sm mb-1">Total Amount</h3>
+              <p className="text-lg font-bold">{formatCurrency(order.total)}</p>
             </div>
           </div>
           
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrintOrder} className="flex items-center gap-1">
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDownloadOrder} className="flex items-center gap-1">
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-            
-            {order.status === "pending" && (
-              <>
-                <Button variant="outline" onClick={handleEditOrder}>Edit Order</Button>
-                <Button onClick={handleMarkDelivered}>
-                  Mark as Delivered
+          <Separator />
+          
+          <div>
+            <h3 className="font-medium mb-3">Order Items</h3>
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full caption-bottom text-sm">
+                <thead className="[&_tr]:border-b bg-muted/50">
+                  <tr>
+                    <th className="h-10 px-4 text-left align-middle font-medium">Product</th>
+                    <th className="h-10 px-4 text-center align-middle font-medium">Quantity</th>
+                    <th className="h-10 px-4 text-right align-middle font-medium">Unit Price</th>
+                    <th className="h-10 px-4 text-right align-middle font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.items.map((item, index) => (
+                    <tr key={index} className="border-b">
+                      <td className="p-2">{item.name}</td>
+                      <td className="p-2 text-center">{item.quantity}</td>
+                      <td className="p-2 text-right">{formatCurrency(item.price)}</td>
+                      <td className="p-2 text-right">{formatCurrency(item.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={3} className="p-2 text-right font-medium">
+                      Total Amount:
+                    </td>
+                    <td className="p-2 text-right font-bold">
+                      {formatCurrency(order.total)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center pt-2">
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm">
+                <FileCheck className="h-4 w-4 mr-2" />
+                Print Order
+              </Button>
+            </div>
+            <div className="flex items-center">
+              {order.status !== "Received" && (
+                <Button variant="secondary" size="sm" className="mr-2">
+                  <Truck className="h-4 w-4 mr-2" />
+                  Mark as Received
                 </Button>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </div>
+        
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
         </DialogFooter>

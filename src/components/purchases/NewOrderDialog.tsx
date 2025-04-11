@@ -23,25 +23,51 @@ type OrderItem = Product & {
   total: number;
 };
 
+interface PurchaseOrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface PurchaseOrder {
+  id: string;
+  date: string;
+  supplier: string;
+  status: string;
+  total: number;
+  items: PurchaseOrderItem[];
+}
+
 interface NewOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suppliers: Supplier[];
-  products: Product[];
-  onCreateOrder: (supplierId: string, items: OrderItem[]) => void;
+  onCreateOrder: (order: PurchaseOrder) => void;
 }
 
 const NewOrderDialog: React.FC<NewOrderDialogProps> = ({
   open,
   onOpenChange,
   suppliers,
-  products,
   onCreateOrder
 }) => {
   const [selectedSupplier, setSelectedSupplier] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState<string>("products");
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState<string>("");
+
+  // Mock products for demo
+  const products: Product[] = [
+    { id: 1, name: "Acetaminophen 500mg", sku: "MED001", category: "Pain Relief", unitCost: 25.99 },
+    { id: 2, name: "Amoxicillin 250mg", sku: "ANT001", category: "Antibiotics", unitCost: 42.50 },
+    { id: 3, name: "Lisinopril 10mg", sku: "CAR001", category: "Cardiovascular", unitCost: 18.95 },
+    { id: 4, name: "Metformin 500mg", sku: "DIB001", category: "Diabetes", unitCost: 15.20 },
+    { id: 5, name: "Atorvastatin 40mg", sku: "CHO001", category: "Cholesterol", unitCost: 19.95 },
+    { id: 6, name: "Aspirin 81mg", sku: "PAI002", category: "Pain Relief", unitCost: 8.99 },
+    { id: 7, name: "Ibuprofen 200mg", sku: "PAI003", category: "Pain Relief", unitCost: 12.45 },
+    { id: 8, name: "Omeprazole 20mg", sku: "GAS001", category: "Gastrointestinal", unitCost: 29.75 },
+  ];
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -101,6 +127,33 @@ const NewOrderDialog: React.FC<NewOrderDialogProps> = ({
 
   // Calculate order total
   const orderTotal = orderItems.reduce((sum, item) => sum + item.total, 0);
+
+  // Handle submitting the order
+  const handleCreateOrder = () => {
+    if (selectedSupplier && orderItems.length > 0) {
+      const supplier = suppliers.find(s => s.id === selectedSupplier);
+      
+      if (!supplier) return;
+      
+      // Create a new PurchaseOrder object
+      const newOrder: PurchaseOrder = {
+        id: `PO-${Math.floor(10000 + Math.random() * 90000)}`,
+        date: new Date().toISOString().slice(0, 10),
+        supplier: supplier.name,
+        status: "Pending",
+        total: orderTotal,
+        items: orderItems.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.unitCost,
+          total: item.total
+        }))
+      };
+      
+      onCreateOrder(newOrder);
+      onOpenChange(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -173,7 +226,7 @@ const NewOrderDialog: React.FC<NewOrderDialogProps> = ({
           </DialogClose>
           <Button 
             type="button" 
-            onClick={() => onCreateOrder(selectedSupplier, orderItems)}
+            onClick={handleCreateOrder}
             disabled={!selectedSupplier || orderItems.length === 0}
           >
             Create Purchase Order

@@ -12,7 +12,7 @@ import { useSupplierStore } from '@/stores/supplierStore';
 import SupplierFormDialog from '@/components/purchases/SupplierFormDialog';
 import PurchaseStats from '@/components/purchases/PurchaseStats';
 
-// Define PurchaseOrder interface to match what's expected
+// Define PurchaseOrderItem interface for items in an order
 interface PurchaseOrderItem {
   name: string;
   quantity: number;
@@ -20,6 +20,7 @@ interface PurchaseOrderItem {
   total: number;
 }
 
+// Define PurchaseOrder interface to match what's expected by components
 interface PurchaseOrder {
   id: string;
   date: string;
@@ -72,7 +73,7 @@ const demoOrders: PurchaseOrder[] = [
   }
 ];
 
-// Ensure this matches the type in supplierStore
+// Make sure this matches the supplier type from the supplier store
 interface Supplier {
   id: string;
   name: string;
@@ -111,12 +112,12 @@ const Purchases = () => {
     setIsSupplierFormOpen(true);
   };
 
-  const handleEditSupplier = (supplier: any) => {
-    setSelectedSupplier(supplier as Supplier);
+  const handleEditSupplier = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
     setIsSupplierFormOpen(true);
   };
 
-  const handleDeleteSupplier = (id: any) => {
+  const handleDeleteSupplier = (id: string) => {
     deleteSupplier(id);
     toast({
       title: "Supplier Deleted",
@@ -160,7 +161,7 @@ const Purchases = () => {
           </div>
           
           <PurchaseOrdersTable 
-            data={orders} 
+            purchaseOrders={orders} 
             onViewOrder={handleViewOrder} 
           />
         </TabsContent>
@@ -230,17 +231,17 @@ const Purchases = () => {
       
       {isNewOrderOpen && (
         <NewOrderDialog
-          isOpen={isNewOrderOpen}
-          onClose={() => setIsNewOrderOpen(false)}
-          onOrderCreated={handleOrderCreated}
+          open={isNewOrderOpen}
+          onOpenChange={(open) => setIsNewOrderOpen(open)}
           suppliers={suppliers}
+          onCreateOrder={handleOrderCreated}
         />
       )}
       
       {isViewOrderOpen && selectedOrder && (
         <ViewOrderDialog
-          isOpen={isViewOrderOpen}
-          onClose={() => setIsViewOrderOpen(false)}
+          open={isViewOrderOpen}
+          onOpenChange={(open) => setIsViewOrderOpen(open)}
           order={selectedOrder}
         />
       )}
