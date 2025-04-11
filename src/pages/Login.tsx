@@ -9,10 +9,11 @@ import { toast } from "@/hooks/use-toast";
 import { Pill } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
   const [loginData, setLoginData] = useState({
@@ -40,9 +41,19 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await login(loginData.email, loginData.password);
+      // Use the supabase client directly to avoid login function issues
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginData.email,
+        password: loginData.password
+      });
       
-      if (!error) {
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
         toast({
           title: "Login successful",
           description: "Welcome to Pharmacy Manager",
@@ -50,6 +61,12 @@ const Login = () => {
         
         navigate("/dashboard");
       }
+    } catch (error: any) {
+      toast({
+        title: "Login error",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

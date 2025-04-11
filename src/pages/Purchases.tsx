@@ -73,15 +73,8 @@ const demoOrders: PurchaseOrder[] = [
   }
 ];
 
-// Make sure this matches the supplier type from the supplier store
-interface Supplier {
-  id: string;
-  name: string;
-  contact: string;
-  email: string;
-  phone: string;
-  address: string;
-}
+// Import Supplier type directly from supplierStore
+import { Supplier } from '@/stores/supplierStore';
 
 const Purchases = () => {
   const [activeTab, setActiveTab] = useState("orders");

@@ -11,9 +11,9 @@ import { Supplier } from '@/stores/supplierStore';
 
 interface SupplierFormDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSave: (supplier: Partial<Supplier>) => void;
-  supplier?: Supplier;
+  onClose: () => void;
+  onSave?: (supplier: Partial<Supplier>) => void;
+  supplier?: Supplier | null;
   title?: string;
 }
 
@@ -27,7 +27,7 @@ const supplierSchema = z.object({
 
 const SupplierFormDialog: React.FC<SupplierFormDialogProps> = ({
   open,
-  onOpenChange,
+  onClose,
   onSave,
   supplier,
   title = "Add New Supplier"
@@ -62,12 +62,16 @@ const SupplierFormDialog: React.FC<SupplierFormDialogProps> = ({
       id: supplier?.id
     };
     
-    onSave(supplierData);
-    onOpenChange(false);
+    if (onSave) {
+      onSave(supplierData);
+    }
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) onClose();
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -146,7 +150,7 @@ const SupplierFormDialog: React.FC<SupplierFormDialogProps> = ({
             />
             
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
               <Button type="submit">

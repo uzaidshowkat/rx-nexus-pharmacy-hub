@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 
 export type Supplier = {
-  id: number;
+  id: string;
   name: string;
   contact: string;
   email: string;
@@ -13,7 +13,7 @@ export type Supplier = {
 // Initial suppliers data
 const initialSuppliers: Supplier[] = [
   {
-    id: 1,
+    id: "1",
     name: "MedSupply Corp",
     contact: "John Smith",
     email: "contact@medsupplycorp.com",
@@ -21,7 +21,7 @@ const initialSuppliers: Supplier[] = [
     address: "123 Medical Way, Pharma City, CA 90001"
   },
   {
-    id: 2,
+    id: "2",
     name: "Healthcare Distributors",
     contact: "Sarah Johnson",
     email: "info@healthcaredist.com",
@@ -29,7 +29,7 @@ const initialSuppliers: Supplier[] = [
     address: "456 Pharmacy Drive, Medicine Town, NY 10001"
   },
   {
-    id: 3,
+    id: "3",
     name: "PharmWholesale Inc",
     contact: "Michael Davis",
     email: "service@pharmwholesale.com",
@@ -42,8 +42,8 @@ type SupplierStore = {
   suppliers: Supplier[];
   addSupplier: (supplier: Supplier) => void;
   updateSupplier: (supplier: Supplier) => void;
-  deleteSupplier: (id: number) => void;
-  getSupplierById: (id: number) => Supplier | undefined;
+  deleteSupplier: (id: string) => void;
+  getSupplierById: (id: string) => Supplier | undefined;
 }
 
 export const useSupplierStore = create<SupplierStore>((set, get) => ({

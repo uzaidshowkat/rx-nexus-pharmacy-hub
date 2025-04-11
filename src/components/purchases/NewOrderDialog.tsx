@@ -174,7 +174,7 @@ const NewOrderDialog: React.FC<NewOrderDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {suppliers.map(supplier => (
-                  <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                  <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}
                   </SelectItem>
                 ))}
