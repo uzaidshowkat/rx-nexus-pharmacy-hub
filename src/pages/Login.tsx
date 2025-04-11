@@ -41,7 +41,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Use the supabase client directly to avoid login function issues
+      // Use the supabase client directly
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginData.email,
         password: loginData.password
