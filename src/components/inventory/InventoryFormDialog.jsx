@@ -18,7 +18,6 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
     id: "",
     name: "",
     sku: "",
-    description: "",
     category: "",
     medicineType: "strip", // Default to strip
     tabletsPerStrip: 10, // Default tablets per strip
@@ -37,7 +36,6 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
         id: item.id,
         name: item.name || "",
         sku: item.sku || "",
-        description: item.description || "",
         category: item.category || "",
         medicineType: item.medicineType || "strip",
         tabletsPerStrip: item.tabletsPerStrip || 10,
@@ -54,7 +52,6 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
         id: "",
         name: "",
         sku: "",
-        description: "",
         category: "",
         medicineType: "strip",
         tabletsPerStrip: 10,
@@ -138,17 +135,6 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Enter description"
-            />
-          </div>
-          
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
@@ -160,6 +146,15 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Antibiotics">Antibiotics</SelectItem>
+                  <SelectItem value="Analgesics">Analgesics</SelectItem>
+                  <SelectItem value="Antacids">Antacids</SelectItem>
+                  <SelectItem value="Antihypertensives">Antihypertensives</SelectItem>
+                  <SelectItem value="Antipyretics">Antipyretics</SelectItem>
+                  <SelectItem value="Antihistamines">Antihistamines</SelectItem>
+                  <SelectItem value="Vitamins">Vitamins & Supplements</SelectItem>
+                  <SelectItem value="Antiseptics">Antiseptics</SelectItem>
+                  <SelectItem value="OTC">OTC</SelectItem>
                   <SelectItem value="Tablets">Tablets</SelectItem>
                   <SelectItem value="Syrup">Syrup</SelectItem>
                   <SelectItem value="Injection">Injection</SelectItem>
@@ -167,7 +162,6 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
                   <SelectItem value="Topical">Topical</SelectItem>
                   <SelectItem value="Drops">Drops</SelectItem>
                   <SelectItem value="Inhaler">Inhaler</SelectItem>
-                  <SelectItem value="OTC">OTC</SelectItem>
                 </SelectContent>
               </Select>
             </div>

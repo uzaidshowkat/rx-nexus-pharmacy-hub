@@ -67,7 +67,7 @@ export const useInventoryStore = create((set, get) => ({
         if (soldItem) {
           // If selling by tablet, calculate how much to reduce
           if (soldItem.sellByTablet && item.medicineType === "strip") {
-            const tabletsSold = soldItem.quantity;
+            const tabletsSold = soldItem.tabletsCount;
             const stripsUsed = Math.ceil(tabletsSold / item.tabletsPerStrip);
             return {
               ...item,
