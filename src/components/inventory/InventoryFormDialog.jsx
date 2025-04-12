@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,11 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useInventoryStore, medicineCategories, medicineManufacturers } from '@/stores/inventoryStore';
+import { toast } from "@/hooks/use-toast";
 
 const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
   const isEditMode = !!item;
+  const { categories, manufacturers, addCategory, addManufacturer } = useInventoryStore();
   
   const [formData, setFormData] = useState({
     id: "",
@@ -28,6 +31,15 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
     expiryDate: "",
     location: ""
   });
+  
+  // State for new category/manufacturer inputs
+  const [newCategory, setNewCategory] = useState("");
+  const [newManufacturer, setNewManufacturer] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isAddingManufacturer, setIsAddingManufacturer] = useState(false);
+  
+  // Fix for date selection issues
+  const [selectedDate, setSelectedDate] = useState(null);
   
   // Update form with item data when editing
   useEffect(() => {
@@ -46,6 +58,12 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
         expiryDate: item.expiryDate || "",
         location: item.location || ""
       });
+      
+      if (item.expiryDate) {
+        setSelectedDate(new Date(item.expiryDate));
+      } else {
+        setSelectedDate(null);
+      }
     } else {
       // Reset form for new item
       setFormData({
@@ -62,6 +80,7 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
         expiryDate: "",
         location: ""
       });
+      setSelectedDate(null);
     }
   }, [item, open]);
   
@@ -89,10 +108,61 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
   };
   
   const handleDateChange = (date) => {
-    setFormData((prev) => ({
+    setSelectedDate(date);
+    if (date) {
+      setFormData((prev) => ({
+        ...prev,
+        expiryDate: date.toISOString()
+      }));
+    }
+  };
+  
+  const handleAddNewCategory = () => {
+    if (newCategory.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Category name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    addCategory(newCategory);
+    setFormData(prev => ({
       ...prev,
-      expiryDate: date ? date.toISOString() : ""
+      category: newCategory
     }));
+    setNewCategory("");
+    setIsAddingCategory(false);
+    
+    toast({
+      title: "Success",
+      description: "New category added successfully"
+    });
+  };
+  
+  const handleAddNewManufacturer = () => {
+    if (newManufacturer.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Manufacturer name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    addManufacturer(newManufacturer);
+    setFormData(prev => ({
+      ...prev,
+      manufacturer: newManufacturer
+    }));
+    setNewManufacturer("");
+    setIsAddingManufacturer(false);
+    
+    toast({
+      title: "Success",
+      description: "New manufacturer added successfully"
+    });
   };
   
   const handleSubmit = (e) => {
@@ -106,6 +176,9 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Inventory Item" : "Add Inventory Item"}</DialogTitle>
+          <DialogDescription>
+            {isEditMode ? "Update details of this inventory item." : "Add a new product to your inventory."}
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -138,32 +211,56 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => handleSelectChange("category", value)}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Antibiotics">Antibiotics</SelectItem>
-                  <SelectItem value="Analgesics">Analgesics</SelectItem>
-                  <SelectItem value="Antacids">Antacids</SelectItem>
-                  <SelectItem value="Antihypertensives">Antihypertensives</SelectItem>
-                  <SelectItem value="Antipyretics">Antipyretics</SelectItem>
-                  <SelectItem value="Antihistamines">Antihistamines</SelectItem>
-                  <SelectItem value="Vitamins">Vitamins & Supplements</SelectItem>
-                  <SelectItem value="Antiseptics">Antiseptics</SelectItem>
-                  <SelectItem value="OTC">OTC</SelectItem>
-                  <SelectItem value="Tablets">Tablets</SelectItem>
-                  <SelectItem value="Syrup">Syrup</SelectItem>
-                  <SelectItem value="Injection">Injection</SelectItem>
-                  <SelectItem value="Capsules">Capsules</SelectItem>
-                  <SelectItem value="Topical">Topical</SelectItem>
-                  <SelectItem value="Drops">Drops</SelectItem>
-                  <SelectItem value="Inhaler">Inhaler</SelectItem>
-                </SelectContent>
-              </Select>
+              {isAddingCategory ? (
+                <div className="flex space-x-2 items-center">
+                  <Input
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="New category name"
+                  />
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    onClick={handleAddNewCategory}
+                  >
+                    Add
+                  </Button>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setIsAddingCategory(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex space-x-2 items-center">
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => handleSelectChange("category", value)}
+                  >
+                    <SelectTrigger id="category" className="w-full">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setIsAddingCategory(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -202,13 +299,56 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="manufacturer">Manufacturer</Label>
-              <Input
-                id="manufacturer"
-                name="manufacturer"
-                value={formData.manufacturer}
-                onChange={handleInputChange}
-                placeholder="Enter manufacturer"
-              />
+              {isAddingManufacturer ? (
+                <div className="flex space-x-2 items-center">
+                  <Input
+                    value={newManufacturer}
+                    onChange={(e) => setNewManufacturer(e.target.value)}
+                    placeholder="New manufacturer name"
+                  />
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    onClick={handleAddNewManufacturer}
+                  >
+                    Add
+                  </Button>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setIsAddingManufacturer(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex space-x-2 items-center">
+                  <Select
+                    value={formData.manufacturer}
+                    onValueChange={(value) => handleSelectChange("manufacturer", value)}
+                  >
+                    <SelectTrigger id="manufacturer" className="w-full">
+                      <SelectValue placeholder="Select manufacturer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {manufacturers.map((manufacturer) => (
+                        <SelectItem key={manufacturer} value={manufacturer}>
+                          {manufacturer}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setIsAddingManufacturer(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -274,19 +414,20 @@ const InventoryFormDialog = ({ open, onOpenChange, onSave, item }) => {
                     variant={"outline"}
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !formData.expiryDate && "text-muted-foreground"
+                      !selectedDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.expiryDate ? format(new Date(formData.expiryDate), "PPP") : <span>Pick a date</span>}
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
                   <Calendar
                     mode="single"
-                    selected={formData.expiryDate ? new Date(formData.expiryDate) : undefined}
+                    selected={selectedDate}
                     onSelect={handleDateChange}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>

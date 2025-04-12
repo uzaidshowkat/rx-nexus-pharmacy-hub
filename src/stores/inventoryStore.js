@@ -11,8 +11,44 @@ const enhancedInitialItems = initialItems.map(item => ({
   stripPrice: item.category === "Tablets" ? item.unitPrice * 10 : 0
 }));
 
+// Predefined categories and manufacturers for selection
+export const medicineCategories = [
+  "Antibiotics",
+  "Analgesics",
+  "Antacids",
+  "Antihypertensives",
+  "Antipyretics",
+  "Antihistamines",
+  "Vitamins",
+  "Antiseptics",
+  "OTC",
+  "Tablets",
+  "Syrup",
+  "Injection",
+  "Capsules",
+  "Topical",
+  "Drops",
+  "Inhaler"
+];
+
+export const medicineManufacturers = [
+  "Sun Pharma",
+  "Cipla",
+  "Dr. Reddy's",
+  "Lupin",
+  "Zydus Cadila",
+  "Aurobindo Pharma",
+  "Alkem Laboratories",
+  "Torrent Pharmaceuticals",
+  "Mankind Pharma",
+  "Glenmark Pharmaceuticals",
+  "Other"
+];
+
 export const useInventoryStore = create((set, get) => ({
   items: enhancedInitialItems,
+  categories: medicineCategories,
+  manufacturers: medicineManufacturers,
   
   addItem: (item) => {
     // Calculate strip price if it's a strip type medicine
@@ -83,6 +119,19 @@ export const useInventoryStore = create((set, get) => ({
         }
         return item;
       })
+    }));
+  },
+  
+  // Functions to manage categories and manufacturers
+  addCategory: (category) => {
+    set((state) => ({
+      categories: [...state.categories, category]
+    }));
+  },
+  
+  addManufacturer: (manufacturer) => {
+    set((state) => ({
+      manufacturers: [...state.manufacturers, manufacturer]
     }));
   }
 }));

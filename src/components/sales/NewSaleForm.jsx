@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,7 +159,8 @@ const NewSaleForm = ({ onCreateSale, onCancel }) => {
           (item.price / item.tabletsPerStrip) : 
           item.price,
         total: item.total,
-        sellByTablet: item.sellByTablet
+        sellByTablet: item.sellByTablet,
+        tabletsCount: item.sellByTablet ? item.tabletsCount : 0
       })),
       totalAmount: calculateNewSaleTotal(),
       paymentMethod: newSalePaymentMethod
