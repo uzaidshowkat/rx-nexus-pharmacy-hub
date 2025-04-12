@@ -2,17 +2,20 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Package, AlertTriangle, Clock } from "lucide-react";
+import { Plus, Package, AlertTriangle, Clock, ListPlus } from "lucide-react";
 import InventoryTable from '@/components/inventory/InventoryTable';
 import InventoryFormDialog from '@/components/inventory/InventoryFormDialog';
+import CategoryManagementDialog from '@/components/inventory/CategoryManagementDialog';
 import { toast } from "@/hooks/use-toast";
-import { useInventoryStore, InventoryItem } from '@/stores/inventoryStore';
+import { useInventoryStore } from '@/stores/inventoryStore';
 
 const Inventory = () => {
   const { items, addItem, updateItem, deleteItem } = useInventoryStore();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<InventoryItem | undefined>(undefined);
+  const [isCategoriesDialogOpen, setIsCategoriesDialogOpen] = useState(false);
+  const [isManufacturersDialogOpen, setIsManufacturersDialogOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState<any | undefined>(undefined);
 
   // Calculate inventory stats
   const totalItems = items.length;
@@ -26,9 +29,9 @@ const Inventory = () => {
     return daysUntilExpiry <= 90;
   }).length;
 
-  const handleAddItem = (newItem: Partial<InventoryItem>) => {
+  const handleAddItem = (newItem: any) => {
     const id = Math.max(0, ...items.map(item => item.id)) + 1;
-    const itemWithId = { ...newItem, id } as InventoryItem;
+    const itemWithId = { ...newItem, id } as any;
     addItem(itemWithId);
     toast({
       title: "Item Added",
@@ -36,10 +39,10 @@ const Inventory = () => {
     });
   };
 
-  const handleEditItem = (updatedItem: Partial<InventoryItem>) => {
+  const handleEditItem = (updatedItem: any) => {
     if (!updatedItem.id) return;
     
-    updateItem(updatedItem as InventoryItem);
+    updateItem(updatedItem as any);
     
     toast({
       title: "Item Updated",
@@ -55,19 +58,37 @@ const Inventory = () => {
     });
   };
 
-  const openEditDialog = (item: InventoryItem) => {
+  const openEditDialog = (item: any) => {
     setCurrentItem(item);
     setIsEditDialogOpen(true);
+  };
+
+  const handleManageCategories = () => {
+    setIsCategoriesDialogOpen(true);
+  };
+  
+  const handleManageManufacturers = () => {
+    setIsManufacturersDialogOpen(true);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Inventory Management</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Item
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={handleManageCategories}>
+            <ListPlus className="mr-2 h-4 w-4" />
+            Categories
+          </Button>
+          <Button variant="outline" onClick={handleManageManufacturers}>
+            <ListPlus className="mr-2 h-4 w-4" />
+            Manufacturers
+          </Button>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Item
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -143,6 +164,18 @@ const Inventory = () => {
         onOpenChange={setIsEditDialogOpen}
         onSave={handleEditItem}
         item={currentItem}
+      />
+      
+      <CategoryManagementDialog
+        open={isCategoriesDialogOpen}
+        onClose={() => setIsCategoriesDialogOpen(false)}
+        type="categories"
+      />
+      
+      <CategoryManagementDialog
+        open={isManufacturersDialogOpen}
+        onClose={() => setIsManufacturersDialogOpen(false)}
+        type="manufacturers"
       />
     </div>
   );

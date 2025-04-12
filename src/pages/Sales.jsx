@@ -3,28 +3,30 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, DollarSign, TrendingUp, CreditCard, UserPlus } from "lucide-react";
-import { sales as initialSales } from '@/components/purchases/PurchaseData';
 import SalesTable from '@/components/sales/SalesTable';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
 import NewSaleForm from '@/components/sales/NewSaleForm';
 import InvoiceGenerator from '@/components/sales/InvoiceGenerator';
+import { useSalesStore } from '@/stores/salesStore';
 import { useInventoryStore } from '@/stores/inventoryStore';
 
 const Sales = () => {
-  const [salesList, setSalesList] = useState(initialSales);
+  const { sales, addSale, getSaleById } = useSalesStore();
+  const { updateStockFromSale } = useInventoryStore();
+  
   const [selectedSale, setSelectedSale] = useState(null);
   const [isSaleDetailsOpen, setIsSaleDetailsOpen] = useState(false);
   const [isNewSaleOpen, setIsNewSaleOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   
   // Calculate sales metrics
-  const todaySales = salesList
+  const todaySales = sales
     .filter(sale => new Date(sale.date).toDateString() === new Date().toDateString())
     .reduce((sum, sale) => sum + sale.totalAmount, 0);
     
-  const thisMonthSales = salesList
+  const thisMonthSales = sales
     .filter(sale => {
       const saleDate = new Date(sale.date);
       const today = new Date();
@@ -32,9 +34,9 @@ const Sales = () => {
     })
     .reduce((sum, sale) => sum + sale.totalAmount, 0);
     
-  const totalTransactions = salesList.length;
+  const totalTransactions = sales.length;
   
-  const uniqueCustomers = new Set(salesList.map(sale => sale.customer)).size;
+  const uniqueCustomers = new Set(sales.map(sale => sale.customer)).size;
 
   const handleViewSale = (sale) => {
     setSelectedSale(sale);
@@ -46,7 +48,7 @@ const Sales = () => {
   };
   
   const handleSaveNewSale = (sale) => {
-    setSalesList(prev => [sale, ...prev]);
+    addSale(sale);
     setIsNewSaleOpen(false);
     
     toast({
@@ -128,7 +130,7 @@ const Sales = () => {
         </CardHeader>
         <CardContent>
           <SalesTable 
-            sales={salesList}
+            sales={sales}
             onView={handleViewSale}
           />
         </CardContent>

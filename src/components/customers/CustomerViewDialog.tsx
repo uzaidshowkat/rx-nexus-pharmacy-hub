@@ -1,268 +1,213 @@
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
-import { Download, Printer, File, ShoppingBag } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type Customer = {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  dateRegistered: string;
-  prescriptions: number;
-  lastVisit: string;
-}
+import { Customer } from '@/stores/customerStore';
+import { usePrescriptionStore } from '@/components/prescriptions/PrescriptionData';
+import { useSalesStore } from '@/stores/salesStore';
 
 interface CustomerViewDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   customer: Customer | null;
-  onEdit: (customer: Customer) => void;
 }
 
-const CustomerViewDialog: React.FC<CustomerViewDialogProps> = ({
-  open,
-  onOpenChange,
-  customer,
-  onEdit
-}) => {
-  if (!customer) return null;
-  
+const CustomerViewDialog = ({ open, onClose, customer }: CustomerViewDialogProps) => {
   const [activeTab, setActiveTab] = useState('details');
-
-  // Mock prescriptions data - in a real app, this would come from your store
-  const mockPrescriptions = [
-    {
-      id: 1,
-      date: new Date().toISOString(),
-      doctor: "Dr. Sharma",
-      medications: ["Crocin 500mg", "Azithromycin 250mg"],
-      status: "Active"
-    },
-    {
-      id: 2,
-      date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      doctor: "Dr. Patel",
-      medications: ["Pantoprazole 40mg", "Montelukast 10mg"],
-      status: "Completed"
-    }
-  ];
+  const { getPrescriptionsByPatientId, getEPrescriptionsByPatientId } = usePrescriptionStore();
+  const { getSalesByCustomerId } = useSalesStore();
   
-  // Mock sales/invoices data - in a real app, this would come from your store
-  const mockSales = [
-    {
-      id: "INV-2023-001",
-      date: new Date().toISOString(),
-      amount: 1250.75,
-      items: 3,
-      status: "Paid"
-    },
-    {
-      id: "INV-2023-002",
-      date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-      amount: 785.50,
-      items: 2,
-      status: "Paid"
-    }
-  ];
+  if (!customer) {
+    return null;
+  }
   
-  const handlePrintDetails = () => {
-    toast({
-      title: "Printing Customer Details",
-      description: "Sending customer details to printer...",
-    });
-    // In a real app, this would trigger a print functionality
-    window.print();
-  };
-
-  const handleDownloadData = () => {
-    toast({
-      title: "Download Started",
-      description: "Customer data is being downloaded as CSV",
-    });
-    
-    // Create and trigger a download for the customer data
-    const csvContent = `Name,Email,Phone,Address,Date Registered,Prescriptions,Last Visit\n${customer.name},${customer.email},${customer.phone},"${customer.address}",${customer.dateRegistered},${customer.prescriptions},${customer.lastVisit}`;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `customer_${customer.id}_details.csv`);
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-  
-  const handleViewInvoice = (invoiceId: string) => {
-    toast({
-      title: "Opening Invoice",
-      description: `Viewing invoice ${invoiceId}`,
-    });
-    // In a real app, this would open the invoice viewer
-  };
+  // Get customer prescriptions and sales
+  const prescriptions = getPrescriptionsByPatientId(customer.id);
+  const ePrescriptions = getEPrescriptionsByPatientId(customer.id);
+  const sales = getSalesByCustomerId(customer.id);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Customer Details</DialogTitle>
-          <DialogDescription>
-            View detailed information about this customer.
-          </DialogDescription>
+          <DialogTitle>Customer Information</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="prescriptions">
-              Prescriptions <span className="ml-1 text-xs bg-primary/10 px-1 rounded-full">{mockPrescriptions.length}</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoices">
-              Invoices <span className="ml-1 text-xs bg-primary/10 px-1 rounded-full">{mockSales.length}</span>
-            </TabsTrigger>
+            <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
+            <TabsTrigger value="eprescriptions">E-Prescriptions</TabsTrigger>
+            <TabsTrigger value="sales">Purchase History</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="space-y-4">
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Name:</div>
-              <div className="col-span-2">{customer.name}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Email:</div>
-              <div className="col-span-2">{customer.email}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Phone:</div>
-              <div className="col-span-2">{customer.phone}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Address:</div>
-              <div className="col-span-2">{customer.address}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Registered:</div>
-              <div className="col-span-2">{new Date(customer.dateRegistered).toLocaleDateString()}</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Prescriptions:</div>
-              <div className="col-span-2">{customer.prescriptions} active prescriptions</div>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div className="font-medium">Last Visit:</div>
-              <div className="col-span-2">{new Date(customer.lastVisit).toLocaleDateString()}</div>
+          <TabsContent value="details" className="py-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Name</p>
+                <p>{customer.name}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Email</p>
+                <p>{customer.email}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                <p>{customer.phone}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Address</p>
+                <p>{customer.address}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Date Registered</p>
+                <p>{customer.dateRegistered}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Last Visit</p>
+                <p>{customer.lastVisit}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Prescriptions</p>
+                <p>{prescriptions.length + ePrescriptions.length}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Purchases</p>
+                <p>{sales.length}</p>
+              </div>
             </div>
             
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-medium mb-2">Recent Activity</h3>
-              <p className="text-sm text-muted-foreground">Prescription refill on {new Date(customer.lastVisit).toLocaleDateString()}</p>
-              <p className="text-sm text-muted-foreground">Purchase of over-the-counter medication on {new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={onClose}>Close</Button>
             </div>
           </TabsContent>
           
-          <TabsContent value="prescriptions" className="space-y-4">
-            {mockPrescriptions.length > 0 ? (
-              <div className="space-y-4">
-                {mockPrescriptions.map(prescription => (
-                  <div key={prescription.id} className="border rounded p-3 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">Prescription #{prescription.id}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(prescription.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        prescription.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {prescription.status}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm"><span className="font-medium">Doctor:</span> {prescription.doctor}</p>
-                      <p className="text-sm"><span className="font-medium">Medications:</span></p>
-                      <ul className="text-sm list-disc pl-5">
-                        {prescription.medications.map((med, idx) => (
-                          <li key={idx}>{med}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button size="sm" variant="ghost">
-                        <File className="mr-2 h-4 w-4" />
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+          <TabsContent value="prescriptions" className="py-4 space-y-4">
+            {prescriptions.length > 0 ? (
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="py-2 px-4 text-left">Date</th>
+                      <th className="py-2 px-4 text-left">Doctor</th>
+                      <th className="py-2 px-4 text-left">Medications</th>
+                      <th className="py-2 px-4 text-left">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prescriptions.map((prescription) => (
+                      <tr key={prescription.id} className="border-t">
+                        <td className="py-2 px-4">{prescription.date}</td>
+                        <td className="py-2 px-4">{prescription.doctorName}</td>
+                        <td className="py-2 px-4">
+                          {prescription.medications.map(med => med.name).join(', ')}
+                        </td>
+                        <td className="py-2 px-4">
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                            prescription.status === 'active' ? 'bg-green-100 text-green-800' :
+                            prescription.status === 'expired' ? 'bg-red-100 text-red-800' : 
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {prescription.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                No prescriptions found for this customer.
-              </div>
+              <p className="text-center py-4 text-muted-foreground">No prescriptions found for this customer.</p>
             )}
+            
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            </div>
           </TabsContent>
           
-          <TabsContent value="invoices" className="space-y-4">
-            {mockSales.length > 0 ? (
-              <div className="space-y-4">
-                {mockSales.map(sale => (
-                  <div key={sale.id} className="border rounded p-3 space-y-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{sale.id}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(sale.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
-                        {sale.status}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <div>
-                        <p className="text-sm"><span className="font-medium">Items:</span> {sale.items}</p>
-                      </div>
-                      <p className="text-md font-medium">₹{sale.amount.toFixed(2)}</p>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button size="sm" variant="ghost" onClick={() => handleViewInvoice(sale.id)}>
-                        <ShoppingBag className="mr-2 h-4 w-4" />
-                        View Invoice
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+          <TabsContent value="eprescriptions" className="py-4 space-y-4">
+            {ePrescriptions.length > 0 ? (
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="py-2 px-4 text-left">Date</th>
+                      <th className="py-2 px-4 text-left">Doctor</th>
+                      <th className="py-2 px-4 text-left">Hospital</th>
+                      <th className="py-2 px-4 text-left">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ePrescriptions.map((prescription) => (
+                      <tr key={prescription.id} className="border-t">
+                        <td className="py-2 px-4">{prescription.date}</td>
+                        <td className="py-2 px-4">{prescription.doctorName}</td>
+                        <td className="py-2 px-4">{prescription.hospitalName}</td>
+                        <td className="py-2 px-4">
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                            prescription.status === 'processed' ? 'bg-green-100 text-green-800' :
+                            prescription.status === 'verified' ? 'bg-blue-100 text-blue-800' : 
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {prescription.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                No invoices found for this customer.
-              </div>
+              <p className="text-center py-4 text-muted-foreground">No e-prescriptions found for this customer.</p>
             )}
+            
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="sales" className="py-4 space-y-4">
+            {sales.length > 0 ? (
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="py-2 px-4 text-left">Date</th>
+                      <th className="py-2 px-4 text-left">Invoice #</th>
+                      <th className="py-2 px-4 text-left">Items</th>
+                      <th className="py-2 px-4 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sales.map((sale) => (
+                      <tr key={sale.id} className="border-t">
+                        <td className="py-2 px-4">{new Date(sale.date).toLocaleDateString()}</td>
+                        <td className="py-2 px-4">{sale.id}</td>
+                        <td className="py-2 px-4">
+                          {sale.items.length} {sale.items.length === 1 ? 'item' : 'items'}
+                        </td>
+                        <td className="py-2 px-4 text-right">₹{sale.totalAmount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t font-medium">
+                      <td colSpan={3} className="py-2 px-4 text-right">Total</td>
+                      <td className="py-2 px-4 text-right">
+                        ₹{sales.reduce((sum, sale) => sum + sale.totalAmount, 0).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">No purchase history found for this customer.</p>
+            )}
+            
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            </div>
           </TabsContent>
         </Tabs>
-        
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4">
-          <Button variant="outline" onClick={handlePrintDetails} className="w-full sm:w-auto">
-            <Printer className="mr-2 h-4 w-4" />
-            Print Details
-          </Button>
-          <Button variant="outline" onClick={handleDownloadData} className="w-full sm:w-auto">
-            <Download className="mr-2 h-4 w-4" />
-            Download Data
-          </Button>
-          <Button onClick={() => {
-            onOpenChange(false);
-            onEdit(customer);
-          }} className="w-full sm:w-auto">
-            Edit Customer
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

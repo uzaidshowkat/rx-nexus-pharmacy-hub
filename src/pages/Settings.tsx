@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +14,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useUserStore } from "@/stores/userStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useAuth } from '@/hooks/useAuth';
 import UserFormDialog from "@/components/settings/UserFormDialog";
 import UserRolePermissionsDialog from "@/components/settings/UserRolePermissionsDialog";
+import UserPermissionsDialog from "@/components/settings/UserPermissionsDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,16 +47,6 @@ type ProfileData = {
   email: string;
   role: string;
   phone: string;
-  darkMode: boolean;
-  notifications: {
-    email: boolean;
-    push: boolean;
-    inApp: boolean;
-  };
-  security: {
-    twoFactor: boolean;
-    sessionTimeout: number;
-  };
 };
 
 const Settings = () => {
@@ -60,37 +54,37 @@ const Settings = () => {
   const tabParam = searchParams.get('tab');
   
   const [activeTab, setActiveTab] = useState(tabParam || 'general');
-  const [notificationSettings, setNotificationSettings] = useState({
-    lowStock: true,
-    expiry: true,
-    ePrescription: true,
-    refill: true,
-    systemUpdates: true
-  });
+  const { currentUser } = useAuth();
   
-  const { users, deleteUser } = useUserStore();
+  const { 
+    users, deleteUser,
+    getUserPermissions
+  } = useUserStore();
+  
+  const {
+    generalSettings,
+    notificationSettings, 
+    profileSettings,
+    updateGeneralSettings,
+    updateNotificationSettings,
+    toggleNotificationSetting,
+    toggleDarkMode,
+    updateProfileSettings
+  } = useSettingsStore();
+  
   const [isUserFormOpen, setIsUserFormOpen] = useState(false);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   
   const [profileData, setProfileData] = useState<ProfileData>({
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@rxnexus.com",
-    role: "Administrator",
+    firstName: currentUser?.name?.split(' ')[0] || "Admin",
+    lastName: currentUser?.name?.split(' ')[1] || "User",
+    email: currentUser?.email || "admin@rxnexus.com",
+    role: currentUser?.role || "Administrator",
     phone: "(555) 987-6543",
-    darkMode: false,
-    notifications: {
-      email: true,
-      push: true,
-      inApp: true
-    },
-    security: {
-      twoFactor: false,
-      sessionTimeout: 30
-    }
   });
 
   useEffect(() => {
@@ -101,23 +95,16 @@ const Settings = () => {
   
   const generalForm = useForm<z.infer<typeof generalSchema>>({
     resolver: zodResolver(generalSchema),
-    defaultValues: {
-      pharmacyName: "RxNexus Pharmacy",
-      licenseNumber: "PL-2025-00123",
-      email: "contact@rxnexus.com",
-      phone: "(555) 123-4567",
-      address: "123 Main Street",
-      city: "Anytown",
-      state: "CA",
-      zipCode: "12345"
-    }
+    defaultValues: generalSettings
   });
 
+  // Update form values when generalSettings changes
+  useEffect(() => {
+    generalForm.reset(generalSettings);
+  }, [generalSettings]);
+
   const handleNotificationChange = (key: keyof typeof notificationSettings) => {
-    setNotificationSettings({
-      ...notificationSettings,
-      [key]: !notificationSettings[key]
-    });
+    toggleNotificationSetting(key);
   };
 
   const handleProfileUpdate = (e: React.FormEvent) => {
@@ -138,57 +125,27 @@ const Settings = () => {
     });
   };
 
-  const toggleDarkMode = () => {
-    setProfileData({
-      ...profileData,
-      darkMode: !profileData.darkMode
-    });
+  const handleToggleDarkMode = () => {
+    toggleDarkMode();
     
     toast({
       title: "Display Setting Changed",
-      description: `Dark mode has been ${!profileData.darkMode ? "enabled" : "disabled"}.`,
-    });
-  };
-  
-  const toggleNotificationSetting = (key: keyof ProfileData["notifications"]) => {
-    setProfileData({
-      ...profileData,
-      notifications: {
-        ...profileData.notifications,
-        [key]: !profileData.notifications[key]
-      }
-    });
-  };
-  
-  const toggleTwoFactor = () => {
-    setProfileData({
-      ...profileData,
-      security: {
-        ...profileData.security,
-        twoFactor: !profileData.security.twoFactor
-      }
-    });
-    
-    toast({
-      title: "Security Setting Updated",
-      description: `Two-factor authentication has been ${!profileData.security.twoFactor ? "enabled" : "disabled"}.`,
+      description: `Dark mode has been ${!profileSettings.darkMode ? "enabled" : "disabled"}.`,
     });
   };
   
   const handleSessionTimeoutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value) && value >= 5) {
-      setProfileData({
-        ...profileData,
-        security: {
-          ...profileData.security,
-          sessionTimeout: value
-        }
+      updateProfileSettings({
+        sessionTimeout: value
       });
     }
   };
   
   const onGeneralSubmit = (data: z.infer<typeof generalSchema>) => {
+    updateGeneralSettings(data);
+    
     toast({
       title: "Settings Saved",
       description: "General settings have been updated successfully.",
@@ -205,7 +162,12 @@ const Settings = () => {
     setIsUserFormOpen(true);
   };
   
-  const handleViewPermissions = (user) => {
+  const handleViewRoles = (user) => {
+    setSelectedUser(user);
+    setIsRoleDialogOpen(true);
+  };
+
+  const handleEditPermissions = (user) => {
     setSelectedUser(user);
     setIsPermissionsDialogOpen(true);
   };
@@ -227,17 +189,20 @@ const Settings = () => {
     }
   };
 
+  // Check if current user is an admin
+  const isAdmin = currentUser?.role === "Administrator" || 
+    (currentUser && getUserPermissions(currentUser.id)?.users?.edit);
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold tracking-tight">System Settings</h1>
       
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full md:w-auto grid-cols-3 md:grid-cols-5">
+        <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general" className="space-y-4 mt-4">
@@ -477,7 +442,7 @@ const Settings = () => {
                       <h4 className="font-medium text-sm">Dark Mode</h4>
                       <p className="text-sm text-muted-foreground">Enable dark mode for the interface</p>
                     </div>
-                    <Switch checked={profileData.darkMode} onCheckedChange={toggleDarkMode} />
+                    <Switch checked={profileSettings.darkMode} onCheckedChange={handleToggleDarkMode} />
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -486,8 +451,8 @@ const Settings = () => {
                       <p className="text-sm text-muted-foreground">Receive notifications via email</p>
                     </div>
                     <Switch 
-                      checked={profileData.notifications.email} 
-                      onCheckedChange={() => toggleNotificationSetting('email')} 
+                      checked={notificationSettings.email} 
+                      onCheckedChange={() => handleNotificationChange('email')} 
                     />
                   </div>
                   
@@ -497,8 +462,8 @@ const Settings = () => {
                       <p className="text-sm text-muted-foreground">Receive push notifications</p>
                     </div>
                     <Switch 
-                      checked={profileData.notifications.push} 
-                      onCheckedChange={() => toggleNotificationSetting('push')} 
+                      checked={notificationSettings.push} 
+                      onCheckedChange={() => handleNotificationChange('push')} 
                     />
                   </div>
                 </div>
@@ -513,7 +478,10 @@ const Settings = () => {
                       <h4 className="font-medium text-sm">Two-Factor Authentication</h4>
                       <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
                     </div>
-                    <Switch checked={profileData.security.twoFactor} onCheckedChange={toggleTwoFactor} />
+                    <Switch 
+                      checked={notificationSettings.twoFactor || false} 
+                      onCheckedChange={() => handleNotificationChange('twoFactor')} 
+                    />
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -525,8 +493,9 @@ const Settings = () => {
                       id="sessionTimeout" 
                       type="number" 
                       min="5"
-                      value={profileData.security.sessionTimeout} 
+                      value={profileSettings.sessionTimeout} 
                       onChange={handleSessionTimeoutChange}
+                      className="w-24"
                     />
                   </div>
                 </div>
@@ -573,14 +542,25 @@ const Settings = () => {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              onClick={() => handleViewPermissions(user)}
+                              onClick={() => handleViewRoles(user)}
+                              disabled={!isAdmin}
                             >
-                              Permissions
+                              View Role
                             </Button>
+                            {isAdmin && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleEditPermissions(user)}
+                              >
+                                Edit Permissions
+                              </Button>
+                            )}
                             <Button 
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleEditUser(user)}
+                              disabled={!isAdmin}
                             >
                               Edit
                             </Button>
@@ -589,6 +569,7 @@ const Settings = () => {
                               size="sm"
                               className="text-red-500 hover:text-red-700 hover:bg-red-100"
                               onClick={() => handleDeleteUser(user)}
+                              disabled={!isAdmin}
                             >
                               Delete
                             </Button>
@@ -600,7 +581,7 @@ const Settings = () => {
                 </table>
               </div>
               <div className="flex justify-end mt-4">
-                <Button onClick={handleAddUser}>Add New User</Button>
+                <Button onClick={handleAddUser} disabled={!isAdmin}>Add New User</Button>
               </div>
             </CardContent>
           </Card>
@@ -691,97 +672,9 @@ const Settings = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
-        <TabsContent value="integrations" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Integrations</CardTitle>
-              <CardDescription>Manage connections with external systems</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="flex items-start justify-between border-b pb-6">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-medium">Electronic Health Records (EHR)</h3>
-                    <p className="text-sm text-muted-foreground">Connect to major EHR systems</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                      <span className="text-xs font-medium">Connected</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    toast({
-                      title: "EHR Settings",
-                      description: "Opening EHR integration settings",
-                    });
-                  }}>Configure</Button>
-                </div>
-                
-                <div className="flex items-start justify-between border-b pb-6">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-medium">Insurance Provider API</h3>
-                    <p className="text-sm text-muted-foreground">Validate insurance coverage in real-time</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                      <span className="text-xs font-medium">Connected</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    toast({
-                      title: "Insurance API Settings",
-                      description: "Opening insurance integration settings",
-                    });
-                  }}>Configure</Button>
-                </div>
-                
-                <div className="flex items-start justify-between border-b pb-6">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-medium">E-Prescription Network</h3>
-                    <p className="text-sm text-muted-foreground">Connect to national e-prescription networks</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                      <span className="text-xs font-medium">Partially Connected</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    toast({
-                      title: "E-Prescription Settings",
-                      description: "Opening e-prescription network settings",
-                    });
-                  }}>Configure</Button>
-                </div>
-                
-                <div className="flex items-start justify-between pb-6">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-medium">Payment Processor</h3>
-                    <p className="text-sm text-muted-foreground">Connect payment processing services</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                      <span className="text-xs font-medium">Not Connected</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    toast({
-                      title: "Payment Settings",
-                      description: "Opening payment integration settings",
-                    });
-                  }}>Configure</Button>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button onClick={() => {
-                    toast({
-                      title: "Add New Integration",
-                      description: "Opening integration marketplace",
-                    });
-                  }}>Add New Integration</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
       
+      {/* User Form Dialog */}
       <UserFormDialog 
         open={isUserFormOpen}
         onClose={() => setIsUserFormOpen(false)}
@@ -789,12 +682,21 @@ const Settings = () => {
         isEdit={!!selectedUser}
       />
       
+      {/* Role Permissions Dialog */}
       <UserRolePermissionsDialog
+        open={isRoleDialogOpen}
+        onClose={() => setIsRoleDialogOpen(false)}
+        userId={selectedUser?.id}
+      />
+      
+      {/* Custom Permissions Dialog */}
+      <UserPermissionsDialog
         open={isPermissionsDialogOpen}
         onClose={() => setIsPermissionsDialogOpen(false)}
         userId={selectedUser?.id}
       />
       
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

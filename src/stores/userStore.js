@@ -1,6 +1,7 @@
 
-// This file was already JavaScript, but I'll include it here for completeness
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 
 // Initial users data
 const initialUsers = [
@@ -78,39 +79,106 @@ const rolePermissions = {
   }
 };
 
-export const useUserStore = create((set, get) => ({
-  users: initialUsers,
-  rolePermissions: rolePermissions,
-  
-  addUser: (user) => {
-    set((state) => ({
-      users: [...state.users, { ...user, id: Date.now().toString() }]
-    }));
-  },
-  
-  updateUser: (updatedUser) => {
-    set((state) => ({
-      users: state.users.map((user) => 
-        user.id === updatedUser.id ? updatedUser : user
-      )
-    }));
-  },
-  
-  deleteUser: (userId) => {
-    set((state) => ({
-      users: state.users.filter((user) => user.id !== userId)
-    }));
-  },
-  
-  getUserById: (id) => {
-    return get().users.find(user => user.id === id);
-  },
-  
-  getRolePermissions: (role) => {
-    return role ? get().rolePermissions[role] : null;
-  },
-  
-  getAvailableRoles: () => {
-    return Object.keys(get().rolePermissions);
-  }
-}));
+export const useUserStore = create(
+  persist(
+    (set, get) => ({
+      users: initialUsers,
+      rolePermissions: rolePermissions,
+      customRolePermissions: {}, // For custom permission overrides
+      
+      // Add a new user
+      addUser: async (user) => {
+        try {
+          // Add user to Supabase if possible (email/password should be handled separately)
+          // Store in local state for now
+          set((state) => ({
+            users: [...state.users, { ...user, id: Date.now().toString() }]
+          }));
+          return { success: true };
+        } catch (error) {
+          console.error("Error adding user:", error);
+          return { success: false, error };
+        }
+      },
+      
+      // Update an existing user
+      updateUser: (updatedUser) => {
+        set((state) => ({
+          users: state.users.map((user) => 
+            user.id === updatedUser.id ? updatedUser : user
+          )
+        }));
+      },
+      
+      // Delete a user
+      deleteUser: (userId) => {
+        set((state) => ({
+          users: state.users.filter((user) => user.id !== userId),
+          // Also remove any custom permissions
+          customRolePermissions: {
+            ...state.customRolePermissions,
+            [userId]: undefined
+          }
+        }));
+      },
+      
+      // Get user by ID
+      getUserById: (id) => {
+        return get().users.find(user => user.id === id);
+      },
+      
+      // Get permissions for a role
+      getRolePermissions: (role) => {
+        return role ? get().rolePermissions[role] : null;
+      },
+      
+      // Get custom permissions for a specific user
+      getUserPermissions: (userId) => {
+        const user = get().getUserById(userId);
+        if (!user) return null;
+        
+        // Check for custom permissions
+        const customPermissions = get().customRolePermissions[userId];
+        if (customPermissions) {
+          return customPermissions;
+        }
+        
+        // Fall back to role-based permissions
+        return get().getRolePermissions(user.role);
+      },
+      
+      // Set custom permissions for a specific user
+      setUserPermissions: (userId, permissions) => {
+        set((state) => ({
+          customRolePermissions: {
+            ...state.customRolePermissions,
+            [userId]: permissions
+          }
+        }));
+      },
+      
+      // Clear custom permissions for a user (revert to role-based)
+      clearUserPermissions: (userId) => {
+        set((state) => {
+          const { [userId]: _, ...rest } = state.customRolePermissions;
+          return {
+            customRolePermissions: rest
+          };
+        });
+      },
+      
+      // Get available roles
+      getAvailableRoles: () => {
+        return Object.keys(get().rolePermissions);
+      },
+      
+      // Get all users by role
+      getUsersByRole: (role) => {
+        return get().users.filter(user => user.role === role);
+      }
+    }),
+    {
+      name: 'pharmacy-users-storage', // Name for localStorage
+    }
+  )
+);
