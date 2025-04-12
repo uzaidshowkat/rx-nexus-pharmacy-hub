@@ -88,7 +88,7 @@ const Inventory = () => {
             <CardTitle className="text-sm font-medium">Total Inventory Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalValue}</div>
+            <div className="text-2xl font-bold">₹{totalValue}</div>
             <p className="text-xs text-muted-foreground">retail value</p>
           </CardContent>
         </Card>
